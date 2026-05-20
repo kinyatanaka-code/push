@@ -1,0 +1,17 @@
+{
+  "name": "push-app",
+  "version": "2.0.0",
+  "description": "PUSH — 成果報酬型ライブ配信プラットフォーム",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "socket.io": "^4.7.0",
+    "pg": "^8.11.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
