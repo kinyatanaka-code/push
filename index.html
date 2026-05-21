@@ -2083,7 +2083,7 @@ async function initAgora(role,streamInfo){
       setTimeout(()=>{const v=rv.querySelector('video');if(v)v.style.cssText='width:100%!important;height:100%!important;object-fit:cover!important;position:absolute!important;inset:0!important;';},200);
       ge('view-ph').style.display='none';setStatus('🔴 ライブ視聴中');
     }
-    if(mediaType==='audio')user.audioTrack.play();
+    if(mediaType==='audio') user.audioTrack.play();
   });
   rtcClient.on('user-unpublished',(_,mt)=>{if(mt==='video')ge('view-ph').style.display='flex';});
   rtcClient.on('user-left',()=>{ge('view-ph').style.display='flex';setStatus('📴 配信が終了しました');});
@@ -2158,8 +2158,34 @@ async function initAgora(role,streamInfo){
   }else{
     rtcClient.setClientRole('audience');
     try{
-      await rtcClient.join(AGORA_APP_ID,ch,AGORA_TEMP_TOKEN,null);
+      let agoraToken=null;
+      try{
+        const tr=await fetch('/api/agora-token',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+AT},
+          body:JSON.stringify({channelName:ch,uid:0}),
+        });
+        if(tr.ok){ const td=await tr.json(); agoraToken=td.token||null; }
+        console.log('🔑 視聴者トークン:', agoraToken?'取得成功':'null');
+      }catch(e){ console.warn('トークン取得失敗:', e.message); }
+      await rtcClient.join(AGORA_APP_ID,ch,agoraToken,null);
       setStatus('👁 視聴中...');
+      // ★ 既に配信中のホストをチェック
+      const users = rtcClient.remoteUsers;
+      for(const user of users){
+        if(user.hasVideo){
+          await rtcClient.subscribe(user,'video');
+          user.videoTrack.play('remote-video');
+          const rv=ge('remote-video');rv.style.zIndex='3';
+          setTimeout(()=>{const v=rv.querySelector('video');if(v)v.style.cssText='width:100%!important;height:100%!important;object-fit:cover!important;position:absolute!important;inset:0!important;';},200);
+          ge('view-ph').style.display='none';
+          setStatus('🔴 ライブ視聴中');
+        }
+        if(user.hasAudio){
+          await rtcClient.subscribe(user,'audio');
+          user.audioTrack.play();
+        }
+      }
     }
     catch(e){setStatus('⚠️ 接続エラー: '+e.message);}
   }
