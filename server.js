@@ -413,57 +413,51 @@ app.get('/live/:id', (_q, res) => res.sendFile(path.join(__dirname,'index.html')
 const AGORA_APP_ID_ENV      = process.env.AGORA_APP_ID      || '367d4b9e93b74576b9d334696c6a17fc';
 const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE || '';
 
-// ── Agora AccessToken2（007形式）正式実装 ──
+// ── Agora AccessToken2（007形式）公式仕様準拠実装 ──
 function generateAgoraToken(channelName, uid = 0, expireSeconds = 86400) {
   if (!AGORA_APP_CERTIFICATE) return null;
   const zlib = require('zlib');
-
   const now    = Math.floor(Date.now() / 1000);
   const expire = now + expireSeconds;
+  const salt   = Math.floor(Math.random() * 0x7FFFFFFF) + 1;
 
-  // Service type: RTC=1
-  const SERVICE_RTC = 1;
-  // Privileges: JOIN=1, PUB_AUDIO=2, PUB_VIDEO=3, PUB_DATA=4, SUB=5
-  const privileges = { 1:expire, 2:expire, 3:expire, 4:expire, 5:expire };
+  const pu16 = v => { const b=Buffer.alloc(2); b.writeUInt16LE(v); return b; };
+  const pu32 = v => { const b=Buffer.alloc(4); b.writeUInt32LE(v); return b; };
+  const pStr = s => { const sb=Buffer.from(s,'utf8'); return Buffer.concat([pu16(sb.length),sb]); };
+  const pBuf = b => Buffer.concat([pu16(b.length),b]);
 
-  function packU16(v){ const b=Buffer.alloc(2); b.writeUInt16LE(v); return b; }
-  function packU32(v){ const b=Buffer.alloc(4); b.writeUInt32LE(v); return b; }
-  function packStr(s){ const sb=Buffer.from(s,'utf8'); return Buffer.concat([packU16(sb.length),sb]); }
-  function packPriv(m){
-    const keys=Object.keys(m).map(Number).sort((a,b)=>a-b);
-    return Buffer.concat([packU16(keys.length),...keys.map(k=>Buffer.concat([packU16(k),packU32(m[k])]))]);
-  }
+  // privileges: {1(joinChannel): expire}
+  const privileges = Buffer.concat([pu16(1), pu16(1), pu32(expire)]);
 
-  const uidStr = String(uid >>> 0);
-
-  // Service body: type(u16) + channelName + uid + privileges
-  const svcBody = Buffer.concat([
-    packU16(SERVICE_RTC),
-    packStr(channelName),
-    packStr(uidStr),
-    packPriv(privileges),
+  // service RTC data
+  const uidStr = (uid === 0 || uid === '') ? '' : String(uid);
+  const svcData = Buffer.concat([
+    pu16(1),            // RTC service type = 1
+    privileges,
+    pStr(channelName),
+    pStr(uidStr),
   ]);
 
-  // Token body: appId(32) + expire(u32) + salt(u32) + ts(u32) + services
-  const salt = Math.floor(Math.random()*0x7FFFFFFF)+1;
-  const tokenBody = Buffer.concat([
-    Buffer.from(AGORA_APP_ID_ENV,'utf8'),   // 32 bytes
-    packU32(expire),
-    packU32(salt),
-    packU32(now),
-    packU16(1),  // 1 service
-    svcBody,
+  // content = packStr(appId) + u32(expire) + u32(salt) + u32(issueTs) + u16(1) + svcData
+  const content = Buffer.concat([
+    pStr(AGORA_APP_ID_ENV),
+    pu32(expire),
+    pu32(salt),
+    pu32(now),
+    pu16(1),
+    svcData,
   ]);
 
-  // Signature = HMAC-SHA256(certificate, tokenBody)
-  const sig = crypto.createHmac('sha256', AGORA_APP_CERTIFICATE).update(tokenBody).digest();
+  // signingKey = HMAC-SHA256(cert_utf8, issueTs_LE + salt_LE)
+  const skData = Buffer.concat([pu32(now), pu32(salt)]);
+  const signingKey = crypto.createHmac('sha256', Buffer.from(AGORA_APP_CERTIFICATE,'utf8'))
+    .update(skData).digest();
 
-  // Final content = sig(2+32) + tokenBody
-  const content = Buffer.concat([packU16(sig.length), sig, tokenBody]);
+  // sig = HMAC-SHA256(signingKey, content)
+  const sig = crypto.createHmac('sha256', signingKey).update(content).digest();
 
-  // Compress with zlib
-  const compressed = zlib.deflateSync(content);
-
+  // final = "007" + base64(zlib(pBuf(sig) + content))
+  const compressed = zlib.deflateSync(Buffer.concat([pBuf(sig), content]));
   return '007' + compressed.toString('base64');
 }
 

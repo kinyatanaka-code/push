@@ -1996,11 +1996,8 @@ function shareStream(){
 // ══════════════════════════════════════
 // Agora RTC
 // ══════════════════════════════════════
-// App ID（ハードコード）
+// App ID
 let AGORA_APP_ID='367d4b9e93b74576b9d334696c6a17fc';
-// ★ 一時トークン（Agoraコンソールで生成）
-const AGORA_TEMP_TOKEN='007eJxTYJhnm6o+3cQ3Rro8M+HdpslBsYeOfUjQXa5x6sDfd8YFjNwKDMZm5ikmSZaplsZJ5iam5mZJlinGxiZmlmbJZomG5mnJn8/yZjUEMjL8jE9iYmSAQBCfk6GgtDhDNyezLJWBAQC5piEO';
-
 async function loadAgoraConfig(){
   try{
     const r=await fetch('/api/agora-config');
@@ -2049,9 +2046,17 @@ async function initAgora(role,streamInfo){
   if(role==='streamer'){
     rtcClient.setClientRole('host');
     try{
-      // ★ 一時トークンを直接使用
-      const agoraToken = AGORA_TEMP_TOKEN;
-      console.log('🔑 一時トークン使用');
+      // サーバーからトークンを取得
+      let agoraToken=null;
+      try{
+        const tr=await fetch('/api/agora-token',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+AT},
+          body:JSON.stringify({channelName:ch,uid:0}),
+        });
+        if(tr.ok){ const td=await tr.json(); agoraToken=td.token||null; }
+        console.log('🔑 トークン:', agoraToken?'取得成功':'null（証明書未設定）');
+      }catch(e){ console.warn('トークン取得失敗:', e.message); }
       await rtcClient.join(AGORA_APP_ID,ch,agoraToken,null);
       setStatus('📷 カメラを起動中...');
 
