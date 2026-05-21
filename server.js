@@ -410,7 +410,7 @@ app.get('/live/:id', (_q, res) => res.sendFile(path.join(__dirname,'index.html')
 // ══════════════════════════════════════════════
 // Agora RTC トークン生成（純粋Node.js実装）
 // ══════════════════════════════════════════════
-const AGORA_APP_ID_ENV      = process.env.AGORA_APP_ID      || '87495886e8024aa49889940998564b23';
+const AGORA_APP_ID_ENV      = process.env.AGORA_APP_ID      || '8e0c14c93a164cf4b4d04f9bcaf8569f';
 const AGORA_APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE || '';
 
 // ── Agora AccessToken2（007形式）公式仕様準拠実装 ──
