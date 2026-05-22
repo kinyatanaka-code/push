@@ -340,8 +340,8 @@ body>*{position:relative;z-index:1;}
 @keyframes combopop{from{transform:scale(.5)}to{transform:scale(1)}}
 
 /* ── ゴールカード ── */
-.stream-center{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:6;text-align:center;pointer-events:none;width:calc(100% - 32px);}
-.goal-card{background:rgba(255,255,255,.12);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px 16px;max-width:320px;margin:0 auto;}
+.stream-center{position:absolute;bottom:70px;left:50%;transform:translateX(-50%);z-index:6;text-align:center;pointer-events:none;width:calc(100% - 32px);transition:opacity .3s;}
+.goal-card{background:rgba(0,0,0,.45);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px 14px;max-width:280px;margin:0 auto;}
 .gc-lbl{font-size:9px;letter-spacing:.14em;color:rgba(255,77,0,.9);font-family:'Space Mono',monospace;margin-bottom:3px;}
 .gc-text{font-size:13px;font-weight:700;line-height:1.4;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);}
 .stimer{position:absolute;top:8px;right:8px;font-family:'Space Mono',monospace;font-size:11px;color:rgba(255,255,255,.7);background:rgba(0,0,0,.4);padding:3px 8px;border-radius:4px;z-index:6;}
@@ -616,6 +616,7 @@ body>*{position:relative;z-index:1;}
   .chatin{flex-shrink:0;position:sticky;bottom:0;background:rgba(15,10,35,.98);z-index:10;}
   .stimer{font-size:9px!important;padding:2px 5px!important;}
   .stream-stats-overlay{display:none;}
+  .rpg-overlay{display:none!important;} /* rpg-overlay mobile hide */
   .vp{padding:6px 8px;}
   .vp-lbl{font-size:8px;}
   .ga-grid{gap:3px;}
@@ -644,6 +645,8 @@ body>*{position:relative;z-index:1;}
   .goal-card{padding:7px 12px;}
   .gc-text{font-size:12px;}
   .gc-lbl{font-size:8px;}
+  .stream-center{display:none!important;}  /* スマホはゴールカード非表示 */
+  .hide-on-mobile{display:none!important;}
   .giftbar{padding:5px 10px;flex-wrap:wrap;gap:5px;}
   .gbl{font-size:8px;}
   .gbv{font-size:12px;}
@@ -700,6 +703,41 @@ body>*{position:relative;z-index:1;}
 }
 
 @media(min-width:769px){.mobile-chat-btn{display:none;}.mobile-close{display:none;}}
+/* ★ スマホボトムナビ対応 */
+@media(max-width:768px){
+  .main-layout{padding-bottom:56px;}
+  .livepage ~ #mobile-nav{display:none!important;}
+  #mobile-nav{display:none;} /* onLoginで表示 */
+  /* 上部の謎バー（RPGオーバーレイ）をスマホで非表示 */
+  .rpg-overlay{display:none!important;}
+  .stream-stats-overlay{display:none!important;}
+  /* ゴールカードをスマホで動画下に移動（動画上に表示しない） */
+  .stream-center{display:none!important;}
+  /* 配信者スマホ：上部のstreamヘッダーも縮小 */
+  .sh{padding:4px 8px;min-height:36px;}
+  .sh .sname{font-size:12px;}
+  .sh .sgoal{font-size:10px;}
+}
+
+
+/* スマホ配信者UI */
+@media(max-width:768px){
+  /* 配信者のssideをコンパクトに */
+  #sside-s .panel{padding:8px 12px;}
+  #sside-s .panel-lbl{font-size:9px;margin-bottom:5px;}
+  #sside-s .stat3{gap:4px;}
+  #sside-s .stbox{padding:5px;}
+  #sside-s .stval{font-size:12px;}
+  #sside-s .stlbl{font-size:7px;}
+  #sside-s .start-btn{font-size:12px;padding:9px;}
+  #sside-s .abtn{font-size:12px;padding:9px;}
+  #sside-s .task-panel{padding:6px 12px;}
+  #sside-s .task-panel-title{font-size:10px;}
+  #sside-s .chathd{font-size:9px;padding:6px 10px;}
+  #sside-s .chatinp{font-size:12px;}
+  /* タイマーを動画内の右上に小さく */
+  #s-timer{font-size:8px!important;padding:1px 4px!important;}
+}
 </style>
 </head>
 <body>
@@ -1429,6 +1467,13 @@ async function onLogin(user, doFetch=true){
   const mpAva=ge('mp-ava');if(mpAva)mpAva.textContent=user.name[0];
   set('mp-name',user.name); set('mp-email',user.email||'');
   socket.emit('auth',{token:AT});
+  // ★ ログイン後は必ずホームを表示（スマホで配信画面になるバグ修正）
+  showPage('home');
+  // ★ スマホボトムナビを表示
+  if(window.innerWidth<=768){
+    const nav=ge('mobile-nav');
+    if(nav) nav.style.display='flex';
+  }
   if(doFetch){await fetchStreams();fetchInsights();fetchRPGStats();}
   setInterval(()=>{ if(!ge('livepage').classList.contains('on')) fetchStreams(); },15000);
 }
@@ -1835,6 +1880,11 @@ function showPage(name){
   if(name==='mypage'){fetchInsights();fetchRPGStats();fetchMpArchives();}
   if(name==='home'){fetchStreams();}
   if(name==='quest'){updateQuestPage();renderQuestCatalog();}
+  // ★ スマホボトムナビ更新
+  if(window.innerWidth<=768){
+    const nav=ge('mobile-nav');
+    if(nav) nav.style.display='flex';
+  }
 }
 
 // ── ホームタブ切り替え ──
@@ -2067,6 +2117,7 @@ async function goLive(){
   setStreamUI(CU.name,goal,true);
   resetLivePage();
   ge('livepage').classList.add('on');
+  {const mn=ge('mobile-nav');if(mn)mn.style.display='none';}
   const tabs=ge('live-tabs');if(tabs)tabs.style.display='flex';
   swLive('s');
   initAgora('streamer',{streamId,goal,title,category:cat,emoji:EMOJI_MAP[cat]||'🎯',isPrivate});
@@ -2136,6 +2187,8 @@ async function exitLive(){
   ['chat-s','chat-v'].forEach(id=>{const e=ge(id);if(e)e.innerHTML='';});
   closeAll();
   ge('livepage').classList.remove('on');
+  // ★ スマホナビ再表示
+  if(window.innerWidth<=768){const mn=ge('mobile-nav');if(mn)mn.style.display='flex';}
   if(location.pathname.startsWith('/live/'))history.pushState({},'','/');
   await Promise.all([fetchStreams(),fetchInsights()]);
   if(role==='streamer'){
@@ -2685,5 +2738,21 @@ function setStatus(msg){set('astatus',msg);const el=ge('astatus');if(el){el.styl
 // ══════════════════════════════════════
 init();
 </script>
+
+<!-- ★ スマホ用ボトムナビ -->
+<nav id="mobile-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;height:56px;background:linear-gradient(180deg,rgba(15,10,35,.97),rgba(8,5,20,.99));border-top:1px solid rgba(180,130,255,.15);z-index:300;align-items:center;justify-content:space-around;">
+  <button onclick="showPage('home')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:none;color:rgba(180,150,255,.6);font-size:10px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;gap:2px;height:100%;">
+    <span style="font-size:20px;">🏠</span><span>ホーム</span>
+  </button>
+  <button onclick="showPage('quest')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:none;color:rgba(180,150,255,.6);font-size:10px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;gap:2px;height:100%;">
+    <span style="font-size:20px;">⚔️</span><span>クエスト</span>
+  </button>
+  <button onclick="showPage('stream')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#FF6A20,#FF1744);border:none;color:#fff;font-size:10px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;gap:1px;border-radius:12px;margin:4px 8px;box-shadow:0 4px 16px rgba(255,50,0,.4);height:44px;">
+    <span style="font-size:18px;">🔴</span><span style="font-weight:700;">配信</span>
+  </button>
+  <button onclick="showPage('mypage')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:none;color:rgba(180,150,255,.6);font-size:10px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;gap:2px;height:100%;">
+    <span style="font-size:20px;">👤</span><span>マイページ</span>
+  </button>
+</nav>
 </body>
 </html>
