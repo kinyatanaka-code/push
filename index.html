@@ -648,6 +648,57 @@ body>*{position:relative;z-index:1;}
   .gbl{font-size:8px;}
   .gbv{font-size:12px;}
 }
+/* ══ スマホ縦型ライブ専用レイアウト ══ */
+@media(max-width:768px){
+  /* ライブページ全体 */
+  .livepage{position:fixed;inset:0;display:flex;flex-direction:column;background:#0A0715;overflow:hidden;}
+  /* 上部：動画エリア（16:9） */
+  .smain{width:100%;aspect-ratio:16/9;flex-shrink:0;max-height:56vw;position:relative;background:#000;}
+  /* 動画上に流れるコメント */
+  #floating-comments{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5;}
+  .fcmt{position:absolute;right:-100%;white-space:nowrap;font-size:12px;font-weight:700;
+    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7);
+    background:rgba(0,0,0,.3);padding:2px 8px;border-radius:12px;
+    animation:floatLeft 6s linear forwards;}
+  @keyframes floatLeft{from{right:-100%}to{right:105%;}}
+  /* 下部：コントロールエリア */
+  .sside{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex!important;
+    flex-direction:column;position:static!important;background:linear-gradient(180deg,#0D0A1E,#08060F);}
+  /* タイトルバー */
+  .mobile-title-bar{padding:10px 14px 6px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .mobile-title-bar .mtb-name{font-size:12px;color:rgba(180,150,255,.6);margin-bottom:2px;}
+  .mobile-title-bar .mtb-goal{font-size:14px;font-weight:700;color:#F0EEFF;line-height:1.3;}
+  /* PUSHボタンエリア */
+  .mobile-push-bar{padding:12px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);}
+  .mobile-amt-row{display:flex;gap:6px;flex:1;}
+  .mobile-amt-btn{flex:1;padding:6px 2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;color:rgba(220,200,255,.7);font-size:11px;font-weight:700;cursor:pointer;text-align:center;}
+  .mobile-amt-btn.sel{background:rgba(255,77,0,.2);border-color:rgba(255,77,0,.5);color:#FF8C44;}
+  .mobile-push-btn{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#FF6A20,#FF1744);
+    border:none;color:#fff;font-size:11px;font-weight:900;cursor:pointer;flex-shrink:0;
+    box-shadow:0 0 20px rgba(255,77,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'Noto Sans JP',sans-serif;}
+  .mobile-push-btn:active{transform:scale(.92);}
+  /* コメント/タスクタブ */
+  .mobile-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.06);}
+  .mobile-tab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;
+    color:rgba(180,150,255,.5);border-bottom:2px solid transparent;transition:all .15s;
+    font-family:'Noto Sans JP',sans-serif;}
+  .mobile-tab.on{color:#FFD700;border-bottom-color:#FFD700;}
+  /* タブコンテンツ */
+  .mobile-tab-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  /* チャット（モバイル版） */
+  .mobile-chat-msgs{padding:8px;display:flex;flex-direction:column;gap:4px;}
+  .mobile-chat-inp{position:sticky;bottom:0;padding:8px;background:rgba(10,7,25,.98);
+    display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);}
+  .mobile-chat-inp input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;padding:8px 14px;color:#F0EEFF;font-size:13px;outline:none;}
+  .mobile-chat-inp button{background:rgba(255,77,0,.8);border:none;color:#fff;border-radius:20px;
+    padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  /* ボムタスクフォーム（モバイル版） */
+  .mobile-bomb-form{padding:12px 14px;}
+}
+
 @media(min-width:769px){.mobile-chat-btn{display:none;}.mobile-close{display:none;}}
 </style>
 </head>
@@ -1050,8 +1101,10 @@ body>*{position:relative;z-index:1;}
           <div id="remote-video"></div>
           <div class="sph" id="view-ph"><div class="sph-icon">📡</div><div class="sph-text">配信開始を待っています...</div></div>
           <canvas id="cvs-v"></canvas>
-          <!-- ★ 視聴者側：達成確率HP表示 -->
-          <div style="position:absolute;top:8px;left:0;right:0;z-index:6;padding:0 10px;pointer-events:none;">
+          <!-- 流れるコメント（スマホのみ表示） -->
+          <div id="floating-comments" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:8;"></div>
+          <!-- HP表示（PC用） -->
+          <div class="hide-on-mobile" style="position:absolute;top:8px;left:0;right:0;z-index:6;padding:0 10px;pointer-events:none;">
             <div class="boss-hp-wrap">
               <div class="boss-hp-label">
                 <span class="boss-hp-title">⚔ 達成確率 HP</span>
@@ -1062,18 +1115,71 @@ body>*{position:relative;z-index:1;}
               </div>
             </div>
           </div>
-          <!-- ゴールカード（視聴者側） -->
-          <div class="stream-center">
+          <!-- ゴールカード（PC用：スマホでは別の場所に表示） -->
+          <div class="stream-center hide-on-mobile">
             <div class="goal-card"><div class="gc-lbl">TODAY'S GOAL</div><div class="gc-text" id="v-goal-disp">目標</div></div>
           </div>
           <div class="stimer" id="v-timer">00:00:00</div>
-          <!-- 視聴者数のみ表示 -->
-          <div style="position:absolute;top:8px;right:8px;z-index:6;text-align:right;">
+          <div class="hide-on-mobile" style="position:absolute;top:8px;right:8px;z-index:6;text-align:right;">
             <div style="font-size:9px;color:rgba(255,255,255,.5);font-family:'Space Mono',monospace;letter-spacing:.1em;">VIEWERS</div>
             <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;color:rgba(255,255,255,.3);line-height:1;" id="v-totalv">0</div>
           </div>
         </div>
         <div class="sside" id="sside-v">
+          <!-- ★ スマホ専用：タイトル＋PUSHボタン＋タブ -->
+          <div id="mobile-viewer-ui" style="display:none;flex-direction:column;flex:1;">
+            <!-- タイトルバー -->
+            <div class="mobile-title-bar">
+              <div class="mtb-name" id="mv-name">配信者名</div>
+              <div class="mtb-goal" id="mv-goal">目標</div>
+            </div>
+            <!-- PUSHボタン -->
+            <div class="mobile-push-bar">
+              <div class="mobile-amt-row">
+                <button class="mobile-amt-btn" onclick="mSelAmt(100,this)">¥100</button>
+                <button class="mobile-amt-btn sel" onclick="mSelAmt(500,this)">¥500</button>
+                <button class="mobile-amt-btn" onclick="mSelAmt(1000,this)">¥1K</button>
+                <button class="mobile-amt-btn" onclick="mSelAmt(5000,this)">¥5K</button>
+              </div>
+              <button class="mobile-push-btn" onclick="onPush()">
+                <span style="font-size:13px;font-weight:900;">PUSH</span>
+                <span style="font-size:8px;opacity:.8;">タップ</span>
+              </button>
+            </div>
+            <!-- コメント/タスクタブ -->
+            <div class="mobile-tabs">
+              <button class="mobile-tab on" id="mtab-chat" onclick="switchMobileTab('chat')">💬 コメント</button>
+              <button class="mobile-tab" id="mtab-bomb" onclick="switchMobileTab('bomb')">💣 ボム</button>
+            </div>
+            <!-- タブ内容 -->
+            <div class="mobile-tab-content">
+              <!-- コメントタブ -->
+              <div id="mtab-chat-content">
+                <div class="mobile-chat-msgs" id="mobile-chat-msgs"></div>
+                <div class="mobile-chat-inp">
+                  <input type="text" id="mobile-chat-input" placeholder="コメントを入力..." onkeydown="if(event.key==='Enter')sendMobileChat()">
+                  <button onclick="sendMobileChat()">送信</button>
+                </div>
+              </div>
+              <!-- ボムタブ -->
+              <div id="mtab-bomb-content" style="display:none;">
+                <div class="mobile-bomb-form">
+                  <div style="font-size:12px;font-weight:700;color:rgba(200,180,255,.8);margin-bottom:8px;">💣 試練を投下する</div>
+                  <textarea id="mb-trial" placeholder="例：腕立て50回、15分延長..." rows="3"
+                    style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:10px;color:#F0EEFF;font-size:13px;resize:none;outline:none;font-family:'Noto Sans JP',sans-serif;"></textarea>
+                  <select id="mb-boost" style="width:100%;margin-top:8px;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:8px;color:#F0EEFF;font-size:13px;">
+                    <option value="5">ブースト +5%</option>
+                    <option value="10">ブースト +10%</option>
+                    <option value="20">ブースト +20%</option>
+                    <option value="50">ブースト +50%</option>
+                  </select>
+                  <button onclick="sendMobileBomb()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#7B1FA2,#E040FB);border:none;color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">💣 投下する！</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- PC用：既存のUI -->
+          <div id="pc-viewer-ui">
           <!-- 最終達成投票 -->
           <div class="votebanner" id="votebanner">
             <div class="vbtitle">🗳️ 目標を達成しましたか？</div>
@@ -1121,6 +1227,7 @@ body>*{position:relative;z-index:1;}
             <div class="chatmsgs" id="chat-v"></div>
             <div class="chatin"><input class="chatinp" placeholder="コメント..." id="inp-v" onkeydown="if(event.key==='Enter')sendMsg('v')"><button class="chatsbtn" onclick="sendMsg('v')">送信</button></div>
           </div>
+          </div><!-- /pc-viewer-ui -->
         </div><!-- /sside-v -->
       </div><!-- /sbody viewer -->
     </div><!-- /lscreen sc-v -->
@@ -1681,9 +1788,21 @@ function openArchModal(a){
   if(recSection){
     if(recUrl){
       recSection.style.display='';
-      recSection.innerHTML=`<div style="margin-bottom:12px;"><div style="font-size:10px;color:rgba(180,150,255,.5);font-family:'Space Mono',monospace;letter-spacing:.06em;margin-bottom:6px;">🎬 タイムラプス動画</div><video controls style="width:100%;border-radius:8px;background:#000;max-height:200px;" src="${recUrl}"></video></div>`;
+      recSection.innerHTML=`
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;color:rgba(180,150,255,.5);font-family:'Space Mono',monospace;letter-spacing:.06em;margin-bottom:8px;">🎬 録画アーカイブ</div>
+          <video id="arch-video-player" controls playsinline
+            style="width:100%;border-radius:12px;background:#000;display:block;max-height:260px;outline:none;box-shadow:0 4px 20px rgba(0,0,0,.5);"
+            src="${recUrl}">
+            お使いのブラウザは動画再生に対応していません。
+          </video>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <a href="${recUrl}" download style="flex:1;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);color:rgba(200,180,255,.7);border-radius:8px;padding:7px;font-size:11px;text-decoration:none;">⬇️ ダウンロード</a>
+          </div>
+        </div>`;
     }else{
-      recSection.style.display='none';
+      recSection.style.display='';
+      recSection.innerHTML=`<div style="background:rgba(255,255,255,.03);border:1px dashed rgba(180,130,255,.15);border-radius:10px;padding:16px;text-align:center;margin-bottom:12px;color:rgba(180,150,255,.4);font-size:12px;">📷 この配信の録画はありません<br><span style="font-size:10px;margin-top:4px;display:block;">次回配信から自動で録画されます</span></div>`;
     }
   }
   ge('arch-modal-overlay').classList.add('on');
@@ -1960,11 +2079,20 @@ async function watchStream(streamId){
   const isOwn=CU&&s.streamerId===CU.id;
   G.role=isOwn?'streamer':'viewer';
   currentStreamId=streamId;
+  G.streamerName = s.streamerName;
+  G.goal = s.goal;
   setStreamUI(s.streamerName,s.goal,isOwn);
   resetLivePage();
   ge('livepage').classList.add('on');
   const tabs=ge('live-tabs');if(tabs)tabs.style.display=isOwn?'flex':'none';
   swLive(isOwn?'s':'v');
+  // ★ スマホレイアウト初期化
+  if (!isOwn) {
+    updateViewerLayout();
+    const mvn=ge('mv-name'); const mvg=ge('mv-goal');
+    if(mvn) mvn.textContent=s.streamerName;
+    if(mvg) mvg.textContent='🎯 '+s.goal;
+  }
   socket.emit('join_stream',{streamId,token:AT});
   initAgora(isOwn?'streamer':'viewer',{streamId,...s});
 }
@@ -2289,8 +2417,104 @@ function onPush(){
 }
 
 // ══════════════════════════════════════
-// リスク対策機能
+// スマホ縦型ライブUI
 // ══════════════════════════════════════
+let mobileAmt = 500;
+const isMobile = () => window.innerWidth <= 768;
+
+// スマホ/PC UIの切り替え
+function updateViewerLayout() {
+  const mobile = isMobile();
+  const mUI = ge('mobile-viewer-ui');
+  const pcUI = ge('pc-viewer-ui');
+  const fc   = ge('floating-comments');
+  if (mUI)  mUI.style.display  = mobile ? 'flex' : 'none';
+  if (pcUI) pcUI.style.display = mobile ? 'none' : '';
+  if (fc)   fc.style.display   = mobile ? '' : 'none';
+  // タイトルをスマホUI側に反映
+  if (mobile && G.streamerName) {
+    const mvn = ge('mv-name'); const mvg = ge('mv-goal');
+    if (mvn) mvn.textContent = G.streamerName;
+    if (mvg) mvg.textContent = '🎯 ' + (G.goal || '');
+  }
+}
+window.addEventListener('resize', updateViewerLayout);
+
+// モバイルタブ切り替え
+function switchMobileTab(tab) {
+  ge('mtab-chat').classList.toggle('on', tab==='chat');
+  ge('mtab-bomb').classList.toggle('on', tab==='bomb');
+  ge('mtab-chat-content').style.display = tab==='chat' ? '' : 'none';
+  ge('mtab-bomb-content').style.display = tab==='bomb' ? '' : 'none';
+}
+
+// モバイル金額選択
+function mSelAmt(amt, el) {
+  mobileAmt = amt;
+  G.selectedAmt = amt;
+  document.querySelectorAll('.mobile-amt-btn').forEach(b => b.classList.remove('sel'));
+  if (el) el.classList.add('sel');
+  // PC側も同期
+  document.querySelectorAll('.ga-btn').forEach(b => {
+    const v = parseInt(b.textContent.replace('¥','').replace('K','000'));
+    b.classList.toggle('sel', v === amt);
+  });
+  set('sel-lbl', amt >= 1000 ? (amt/1000)+'K' : amt);
+}
+
+// モバイルチャット送信
+function sendMobileChat() {
+  const inp = ge('mobile-chat-input');
+  if (!inp || !inp.value.trim()) return;
+  socket.emit('chat_message', {streamId: currentStreamId, text: inp.value.trim(), token: AT});
+  inp.value = '';
+}
+
+// モバイルボム送信
+function sendMobileBomb() {
+  const trial = ge('mb-trial')?.value?.trim();
+  const boost = parseInt(ge('mb-boost')?.value || '5');
+  if (!trial) { ge('mb-trial').style.borderColor='#FF1744'; setTimeout(()=>ge('mb-trial').style.borderColor='',2000); return; }
+  if (checkDangerWords(trial)) { alert('⚠️ 危険なワードが含まれています'); return; }
+  socket.emit('send_bomb', {streamId: currentStreamId, trial, boost, token: AT});
+  ge('mb-trial').value = '';
+  ge('mtab-chat').click();
+}
+
+// ★ 流れるコメント
+function addFloatingComment(text, user) {
+  if (!isMobile()) return;
+  const fc = ge('floating-comments');
+  if (!fc) return;
+  const el = document.createElement('div');
+  el.className = 'fcmt';
+  el.textContent = (user ? user + ': ' : '') + text;
+  // ランダムな高さ位置
+  el.style.top = (15 + Math.random() * 65) + '%';
+  fc.appendChild(el);
+  setTimeout(() => el.remove(), 6500);
+}
+
+// チャットメッセージ受信時に流れるコメントも追加
+const _origChatBoth = chatBoth;
+function chatBoth(user, text, type) {
+  _origChatBoth(user, text, type);
+  if (type !== 'sys' && isMobile()) {
+    addFloatingComment(text, user === 'SYSTEM' ? null : user);
+  }
+  // モバイルチャットにも追加
+  if (isMobile()) {
+    const mc = ge('mobile-chat-msgs');
+    if (mc) {
+      const d = document.createElement('div');
+      d.style.cssText = 'font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);';
+      if (type === 'sys') d.style.color = 'rgba(255,140,80,.7)';
+      d.innerHTML = `<span style="font-weight:700;color:rgba(180,150,255,.8);">${esc(user)}</span> <span style="color:rgba(220,200,255,.85);">${esc(text)}</span>`;
+      mc.appendChild(d);
+      mc.scrollTop = mc.scrollHeight;
+    }
+  }
+}
 
 // ★ カメラ直接テスト（Agoraを使わずgetUserMediaで確認）
 async function testCamera(){
