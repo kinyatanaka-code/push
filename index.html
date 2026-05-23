@@ -283,8 +283,8 @@ body>*{position:relative;z-index:1;}
 .arch-body{padding:16px 20px;}
 
 /* ══ ライブページ（ゲーム風ダーク） ══ */
-.livepage{display:none;position:fixed;inset:0;z-index:200;background:#060412;flex-direction:column;}
-.livepage.on{display:flex;}
+.livepage{display:none!important;position:fixed;inset:0;z-index:200;background:#060412;flex-direction:column;}
+.livepage.on{display:flex!important;}
 /* ナビバー（ダーク） */
 .live-top{display:flex;align-items:center;gap:8px;padding:0 12px;height:48px;border-bottom:1px solid rgba(180,130,255,.15);background:linear-gradient(90deg,rgba(12,8,28,.98),rgba(18,12,38,.98));flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.4);}
 .l-back{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:16px;color:rgba(220,210,255,.7);padding:5px 10px;border-radius:6px;flex-shrink:0;transition:all .15s;}
@@ -1461,6 +1461,9 @@ async function init(){
 
 async function onLogin(user, doFetch=true){
   CU=user;
+  // ★ ライブページを強制非表示
+  ge('livepage').classList.remove('on');
+  ge('livepage').style.display='none';
   ge('auth-page').classList.add('hide');
   ge('gnav').style.display='flex';
   ge('main-layout').style.display='flex';
@@ -2122,6 +2125,7 @@ async function goLive(){
   setStreamUI(CU.name,goal,true);
   resetLivePage();
   ge('livepage').classList.add('on');
+  ge('livepage').style.display=''; // inlineスタイルをリセット
   {const mn=ge('mobile-nav');if(mn)mn.style.display='none';}
   const tabs=ge('live-tabs');if(tabs)tabs.style.display='flex';
   swLive('s');
@@ -2140,6 +2144,7 @@ async function watchStream(streamId){
   setStreamUI(s.streamerName,s.goal,isOwn);
   resetLivePage();
   ge('livepage').classList.add('on');
+  ge('livepage').style.display=''; // inlineスタイルをリセット
   const tabs=ge('live-tabs');if(tabs)tabs.style.display=isOwn?'flex':'none';
   swLive(isOwn?'s':'v');
   // ★ スマホレイアウト初期化
