@@ -774,7 +774,7 @@ body>*{position:relative;z-index:1;}
 
 <!-- ══ ナビ ══ -->
 <nav class="gnav" id="gnav" style="display:none;">
-  <div class="gnav-logo" onclick="showPage('home')">PUSH</div>
+  <div class="gnav-logo" onclick="window.innerWidth<=768?openMobileMenu():showPage('home')">PUSH</div>
   <div class="gnav-search"><span class="gnav-si">🔍</span><input type="text" placeholder="配信を検索..." id="search-inp" oninput="onSearch(this.value)"></div>
   <div class="gnav-right">
     <button class="gnav-btn gnav-live" onclick="showPage('stream')">📹 <span>配信する</span></button>
@@ -2480,6 +2480,19 @@ function onPush(){
 }
 
 // ══════════════════════════════════════
+// スマホスライドメニュー
+function openMobileMenu(){
+  const menu=ge('mobile-menu'),overlay=ge('mobile-menu-overlay');
+  const mn=ge('mm-name');if(mn&&CU)mn.textContent=CU.name;
+  if(menu){menu.style.display='flex';setTimeout(()=>menu.style.transform='translateX(0)',10);}
+  if(overlay)overlay.style.display='block';
+}
+function closeMobileMenu(){
+  const menu=ge('mobile-menu'),overlay=ge('mobile-menu-overlay');
+  if(menu){menu.style.transform='translateX(-100%)';setTimeout(()=>menu.style.display='none',260);}
+  if(overlay)overlay.style.display='none';
+}
+
 // スマホ縦型ライブUI
 // ══════════════════════════════════════
 let mobileAmt = 500;
@@ -2749,7 +2762,33 @@ function setStatus(msg){set('astatus',msg);const el=ge('astatus');if(el){el.styl
 init();
 </script>
 
-<!-- ★ スマホ用ボトムナビ -->
+<!-- ★ スマホ用スライドメニュー -->
+<div id="mobile-menu-overlay" onclick="closeMobileMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:399;backdrop-filter:blur(4px);"></div>
+<div id="mobile-menu" style="display:none;position:fixed;top:0;left:0;bottom:0;width:240px;background:linear-gradient(180deg,rgba(18,12,42,.99),rgba(10,7,28,.99));border-right:1px solid rgba(180,130,255,.2);z-index:400;flex-direction:column;padding:60px 0 20px;box-shadow:8px 0 32px rgba(0,0,0,.6);transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);">
+  <div style="padding:0 20px 20px;border-bottom:1px solid rgba(180,130,255,.1);">
+    <div style="font-family:'Black Han Sans',sans-serif;font-size:22px;background:linear-gradient(90deg,#FFD700,#FF8C00);-webkit-background-clip:text;background-clip:text;color:transparent;">PUSH</div>
+    <div id="mm-name" style="font-size:13px;color:rgba(200,180,255,.7);margin-top:4px;"></div>
+  </div>
+  <div style="flex:1;padding:12px 0;">
+    <button onclick="closeMobileMenu();showPage('home')" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:none;color:rgba(220,200,255,.8);font-size:14px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:left;">
+      <span style="font-size:20px;">🏠</span> ホーム
+    </button>
+    <button onclick="closeMobileMenu();showPage('mypage')" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:none;color:rgba(220,200,255,.8);font-size:14px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:left;">
+      <span style="font-size:20px;">👤</span> マイページ
+    </button>
+    <button onclick="closeMobileMenu();showPage('stream')" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:none;color:rgba(220,200,255,.8);font-size:14px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:left;">
+      <span style="font-size:20px;">🔴</span> 配信する
+    </button>
+    <button onclick="closeMobileMenu();showPage('quest')" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 20px;background:none;border:none;color:rgba(220,200,255,.8);font-size:14px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:left;">
+      <span style="font-size:20px;">⚔️</span> クエスト
+    </button>
+  </div>
+  <div style="padding:16px 20px;border-top:1px solid rgba(180,130,255,.1);">
+    <button onclick="closeMobileMenu();doLogout()" style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 0;background:none;border:none;color:rgba(255,100,100,.7);font-size:13px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;">
+      <span style="font-size:18px;">🚪</span> ログアウト
+    </button>
+  </div>
+</div>
 <nav id="mobile-nav" style="display:none;position:fixed;bottom:0;left:0;right:0;height:56px;background:linear-gradient(180deg,rgba(15,10,35,.97),rgba(8,5,20,.99));border-top:1px solid rgba(180,130,255,.15);z-index:300;align-items:center;justify-content:space-around;">
   <button onclick="showPage('home')" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:none;border:none;color:rgba(180,150,255,.6);font-size:10px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;gap:2px;height:100%;">
     <span style="font-size:20px;">🏠</span><span>ホーム</span>
