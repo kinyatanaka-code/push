@@ -85,6 +85,7 @@ body>*{position:relative;z-index:1;}
 .main{flex:1;margin-left:200px;min-height:calc(100vh - 52px);}
 .page{display:none;}
 .page.on{display:block;}
+@media(max-width:768px){.page.on{display:block!important;}}
 
 /* ══ ホーム — ゲームUI ══ */
 /* ピックアップ（メインバナー） */
@@ -705,7 +706,7 @@ body>*{position:relative;z-index:1;}
 @media(min-width:769px){.mobile-chat-btn{display:none;}.mobile-close{display:none;}}
 /* ★ スマホボトムナビ対応 */
 @media(max-width:768px){
-  .main-layout{padding-bottom:56px;}
+  .main-layout{padding-bottom:56px;} .layout{display:flex!important;}
   .livepage ~ #mobile-nav{display:none!important;}
   #mobile-nav{display:none;} /* onLoginで表示 */
   /* 上部の謎バー（RPGオーバーレイ）をスマホで非表示 */
@@ -1463,17 +1464,21 @@ async function onLogin(user, doFetch=true){
   ge('auth-page').classList.add('hide');
   ge('gnav').style.display='flex';
   ge('main-layout').style.display='flex';
+  ge('main-layout').style.visibility='visible';
+  ge('main-layout').style.opacity='1';
   ge('gnav-ava').textContent=user.name[0];
   const mpAva=ge('mp-ava');if(mpAva)mpAva.textContent=user.name[0];
   set('mp-name',user.name); set('mp-email',user.email||'');
   socket.emit('auth',{token:AT});
-  // ★ ログイン後は必ずホームを表示（スマホで配信画面になるバグ修正）
-  showPage('home');
+  // ★ ホームを表示
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  const homeEl=ge('page-home');
+  if(homeEl){homeEl.classList.add('on');homeEl.style.display='block';}
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('on'));
+  const sbHome=ge('sb-home');if(sbHome)sbHome.classList.add('on');
   // ★ スマホボトムナビを表示
-  if(window.innerWidth<=768){
-    const nav=ge('mobile-nav');
-    if(nav) nav.style.display='flex';
-  }
+  const nav=ge('mobile-nav');
+  if(nav) nav.style.display=window.innerWidth<=768?'flex':'none';
   if(doFetch){await fetchStreams();fetchInsights();fetchRPGStats();}
   setInterval(()=>{ if(!ge('livepage').classList.contains('on')) fetchStreams(); },15000);
 }
