@@ -717,7 +717,6 @@ body>*{position:relative;z-index:1;}
 .ms-doverlay.on{opacity:1;pointer-events:all;}
 .ms-drawer{position:absolute;left:0;right:0;bottom:-72%;height:72%;background:rgba(8,4,18,.97);backdrop-filter:blur(24px);border-radius:24px 24px 0 0;z-index:20;transition:bottom .38s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.09);border-bottom:none;}
 .ms-drawer.on{bottom:0;}
-/* 配信者スマホ：流れるコメント */
 #ms-comment-flow{position:absolute;bottom:115px;left:12px;right:72px;pointer-events:none;overflow:hidden;z-index:2;display:flex;flex-direction:column-reverse;gap:4px;max-height:45%;}
 .ms-fcmt{display:inline-block;background:rgba(0,0,0,.55);color:#fff;font-size:13px;border-radius:20px;padding:5px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;opacity:0;animation:ms-fcmt-anim 6s linear forwards;}
 @keyframes ms-fcmt-anim{0%{opacity:0;transform:translateX(-6px)}8%{opacity:1;transform:translateX(0)}80%{opacity:1}100%{opacity:0}}
@@ -2237,54 +2236,40 @@ async function stopRecording(){
         const sid=recStreamId||'stream';
         const fname=`push_rec_${sid}_${Date.now()}.${ext}`;
 
-        // ★ サーバーに自動アップロード（リトライ付き）
-        const tryUpload = async (attempt) => {
-          setStatus(`📤 録画をアップロード中... (${attempt}/3)`);
-          // スマホ画面にも進捗表示
-          const hud = ge('ms-hud');
-          const prog = document.createElement('div');
-          prog.id = 'ms-upload-prog';
-          prog.style.cssText = 'position:absolute;bottom:85px;left:14px;right:14px;background:rgba(0,0,0,.7);border-radius:10px;padding:8px 12px;font-size:12px;color:#fff;text-align:center;z-index:30;';
-          prog.textContent = `📤 録画をアーカイブに保存中... (${attempt}/3)`;
-          ge('mob-s-overlay')?.appendChild(prog);
+        // ★ ①端末に自動ダウンロード
+        const objUrl=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=objUrl; a.download=fname; a.click();
+        setTimeout(()=>URL.revokeObjectURL(objUrl),5000);
 
-          const fd=new FormData();
-          fd.append('file',blob,fname);
-          fd.append('streamId',sid);
-          try{
-            const r=await fetch('/api/upload-recording',{
-              method:'POST',
-              headers:{Authorization:'Bearer '+AT},
-              body:fd,
-            });
-            prog.remove();
-            if(r.ok){
-              const d=await r.json();
-              setStatus('✅ 録画をアーカイブに保存しました');
-              // 成功通知
-              const ok = document.createElement('div');
-              ok.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,200,100,.9);border-radius:10px;padding:8px 18px;font-size:13px;color:#fff;font-weight:700;z-index:999;';
-              ok.textContent = '✅ 録画保存完了！';
-              document.body.appendChild(ok);
-              setTimeout(()=>ok.remove(), 3000);
-              resolve(d.url);
-            } else if (attempt < 3) {
-              setTimeout(()=>tryUpload(attempt+1), 2000);
-            } else {
-              setStatus('❌ アップロード失敗。マイページから手動アップロード可能です');
-              resolve(null);
-            }
-          }catch(e){
-            prog?.remove();
-            if (attempt < 3) {
-              setTimeout(()=>tryUpload(attempt+1), 2000);
-            } else {
-              setStatus('❌ アップロード失敗: ' + e.message);
-              resolve(null);
-            }
+        // ★ ②サーバーに自動アップロード
+        setStatus('📤 録画をサーバーに保存中...');
+        const fd=new FormData();
+        fd.append('file',blob,fname);
+        fd.append('streamId',sid);
+        try{
+          // ★ streamIdをクエリ文字列に付ける（サーバーはreq.query.streamIdを読む）
+          const r=await fetch(`/api/upload-recording?streamId=${encodeURIComponent(sid)}`,{
+            method:'POST',
+            headers:{Authorization:'Bearer '+AT},
+            body:fd,
+          });
+          if(r.ok){
+            const d=await r.json();
+            setStatus('✅ 録画をアーカイブに保存しました');
+            console.log('✅ 自動アップロード完了:', d.url);
+            resolve(d.url);
+          }else{
+            const errText = await r.text().catch(()=>'');
+            setStatus('❌ アップロード失敗: '+r.status);
+            console.warn('自動アップロード失敗:', r.status, errText);
+            resolve(null);
           }
-        };
-        await tryUpload(1);
+        }catch(e){
+          setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
+          console.warn('自動アップロード失敗:', e.message);
+          resolve(null);
+        }
       }catch(e){
         console.warn('録画エラー:', e.message);
         resolve(null);
@@ -2729,10 +2714,8 @@ function msSend(){
   if(!inp||!inp.value.trim())return;
   const text=inp.value.trim();
   const myName=CU?.name||'自分';
-  // ★ 自分のコメントを即時表示
   msFlowComment(myName, text, 'normal');
-  // ソケット経由のエコーで二重表示されないようキーを登録
-  _msPendingSelf.add(myName + '|' + text);
+  _msPendingSelf.add(myName+'|'+text);
   socket.emit('chat_message',{streamId:currentStreamId,text,token:AT});
   inp.value='';
 }
@@ -2880,7 +2863,6 @@ function chatBoth(user, text, type) {
   if (type !== 'sys' && isMobile()) {
     addFloatingComment(text, user === 'SYSTEM' ? null : user);
   }
-  // 視聴者スマホのモバイルチャットにも追加
   if (isMobile()) {
     const mc = ge('mobile-chat-msgs');
     if (mc) {
@@ -3049,7 +3031,7 @@ function addMsg(side,user,text,type,color){
 function addMsgBoth(u,t,type,color){addMsg('s',u,t,type,color);addMsg('v',u,t,type,color);}
 function chatBoth(u,t,type){addMsg('s',u,t,type);addMsg('v',u,t,type);}
 
-// ★ 配信者スマホ：コメント1件を流す共通関数
+// ★ 配信者スマホ：コメントを流す共通関数
 function msFlowComment(user, text, type) {
   if (!isMobile() || G.role !== 'streamer') return;
   const flow = ge('ms-comment-flow');
@@ -3070,17 +3052,14 @@ function msFlowComment(user, text, type) {
     const cnt = ge('ms-cmts');
     if (cnt) cnt.textContent = (parseInt(cnt.textContent || '0') + 1);
   }
-  if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx === 1) {
-    msDrRender();
-  }
+  if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx === 1) msDrRender();
 }
 
-// ★ addMsgBoth を上書き（ソケット受信コメントを配信者スマホに流す）
+// ★ addMsgBoth を上書き（ソケット受信 → 配信者スマホに流す）
 const _msPendingSelf = new Set();
 const _origAddMsgBoth = addMsgBoth;
 function addMsgBoth(u, t, type, color) {
   _origAddMsgBoth(u, t, type, color);
-  // 自分が msSend() で即時表示済みのものはスキップ（二重防止）
   const key = (u||'') + '|' + (t||'');
   if (_msPendingSelf.has(key)) { _msPendingSelf.delete(key); return; }
   msFlowComment(u, t, type);
