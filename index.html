@@ -653,72 +653,11 @@ body>*{position:relative;z-index:1;}
   .gbv{font-size:12px;}
 }
 /* == スマホ縦型ライブ専用レイアウト == */
-@media(max-width:768px){
-  /* ライブページ全体 */
-  .livepage{position:fixed;inset:0;display:flex;flex-direction:column;background:#0A0715;overflow:hidden;}
-  /* 上部：動画エリア（16:9） */
-  .smain{width:100%;aspect-ratio:16/9;flex-shrink:0;max-height:56vw;position:relative;background:#000;}
-  /* 動画上に流れるコメント */
-  #floating-comments{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5;}
-  .fcmt{position:absolute;right:-100%;white-space:nowrap;font-size:12px;font-weight:700;
-    color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.7);
-    background:rgba(0,0,0,.3);padding:2px 8px;border-radius:12px;
-    animation:floatLeft 6s linear forwards;}
-  @keyframes floatLeft{from{right:-100%}to{right:105%;}}
-  /* 下部：コントロールエリア */
-  .sside{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex!important;
-    flex-direction:column;position:static!important;background:linear-gradient(180deg,#0D0A1E,#08060F);}
-  /* タイトルバー */
-  .mobile-title-bar{padding:10px 14px 6px;border-bottom:1px solid rgba(255,255,255,.06);}
-  .mobile-title-bar .mtb-name{font-size:12px;color:rgba(180,150,255,.6);margin-bottom:2px;}
-  .mobile-title-bar .mtb-goal{font-size:14px;font-weight:700;color:#F0EEFF;line-height:1.3;}
-  /* PUSHボタンエリア */
-  .mobile-push-bar{padding:12px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.06);}
-  .mobile-amt-row{display:flex;gap:6px;flex:1;}
-  .mobile-amt-btn{flex:1;padding:6px 2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-    border-radius:8px;color:rgba(220,200,255,.7);font-size:11px;font-weight:700;cursor:pointer;text-align:center;}
-  .mobile-amt-btn.sel{background:rgba(255,77,0,.2);border-color:rgba(255,77,0,.5);color:#FF8C44;}
-  .mobile-push-btn{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#FF6A20,#FF1744);
-    border:none;color:#fff;font-size:11px;font-weight:900;cursor:pointer;flex-shrink:0;
-    box-shadow:0 0 20px rgba(255,77,0,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-family:'Noto Sans JP',sans-serif;}
-  .mobile-push-btn:active{transform:scale(.92);}
-  /* コメント/タスクタブ */
-  .mobile-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.06);}
-  .mobile-tab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;
-    color:rgba(180,150,255,.5);border-bottom:2px solid transparent;transition:all .15s;
-    font-family:'Noto Sans JP',sans-serif;}
-  .mobile-tab.on{color:#FFD700;border-bottom-color:#FFD700;}
-  /* タブコンテンツ */
-  .mobile-tab-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  /* チャット（モバイル版） */
-  .mobile-chat-msgs{padding:8px;display:flex;flex-direction:column;gap:4px;}
-  .mobile-chat-inp{position:sticky;bottom:0;padding:8px;background:rgba(10,7,25,.98);
-    display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.06);}
-  .mobile-chat-inp input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
-    border-radius:20px;padding:8px 14px;color:#F0EEFF;font-size:13px;outline:none;}
-  .mobile-chat-inp button{background:rgba(255,77,0,.8);border:none;color:#fff;border-radius:20px;
-    padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;}
-  /* ボムタスクフォーム（モバイル版） */
-  .mobile-bomb-form{padding:12px 14px;}
-}
+
 
 @media(min-width:769px){.mobile-chat-btn{display:none;}.mobile-close{display:none;}}
 /* ★ スマホボトムナビ対応 */
-@media(max-width:768px){
-  .main-layout{padding-bottom:56px;} .layout{display:flex!important;}
-  .livepage ~ #mobile-nav{display:none!important;}
-  #mobile-nav{display:none;} /* onLoginで表示 */
-  /* 上部の謎バー（RPGオーバーレイ）をスマホで非表示 */
-  .rpg-overlay{display:none!important;}
-  .stream-stats-overlay{display:none!important;}
-  /* ゴールカードをスマホで動画下に移動（動画上に表示しない） */
-  .stream-center{display:none!important;}
-  /* 配信者スマホ：上部のstreamヘッダーも縮小 */
-  .sh{padding:4px 8px;min-height:36px;}
-  .sh .sname{font-size:12px;}
-  .sh .sgoal{font-size:10px;}
-}
+
 
 
 
@@ -739,6 +678,55 @@ body>*{position:relative;z-index:1;}
   /* タイマーを動画内の右上に小さく */
   #s-timer{font-size:8px!important;padding:1px 4px!important;}
 }
+
+/* ── モバイル配信者オーバーレイ ── */
+#mob-s-overlay{display:none;position:absolute;inset:0;overflow:hidden;z-index:15;}
+@media(max-width:768px){#mob-s-overlay{display:block!important;}}
+.ms-hud{position:absolute;top:0;left:0;right:0;padding:52px 16px 20px;background:linear-gradient(to bottom,rgba(0,0,0,.65),transparent);display:flex;align-items:center;justify-content:space-between;z-index:2;}
+.ms-live-pill{background:#ff3b30;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:800;color:#fff;letter-spacing:1.5px;display:flex;align-items:center;gap:5px;}
+.ms-live-dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:msblink 1.2s infinite;}
+@keyframes msblink{0%,100%{opacity:1}50%{opacity:.25}}
+.ms-timer{color:rgba(255,255,255,.75);font-size:13px;font-variant-numeric:tabular-nums;font-family:'Space Mono',monospace;}
+.ms-close{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:#fff;}
+.ms-viewers{color:rgba(255,255,255,.65);font-size:13px;}
+.ms-side{position:absolute;right:14px;top:50%;transform:translateY(-60%);display:flex;flex-direction:column;gap:14px;align-items:center;z-index:2;}
+.ms-btn{background:rgba(255,255,255,.12);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:10px 0;width:54px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;position:relative;}
+.ms-btn.bomb{background:rgba(255,107,53,.18);border-color:rgba(255,107,53,.4);}
+.ms-btn-icon{font-size:22px;line-height:1;}
+.ms-btn-val{color:#fff;font-size:13px;font-weight:700;line-height:1.2;}
+.ms-btn-val.or{color:#ff6b35;}
+.ms-btn-lbl{color:rgba(255,255,255,.45);font-size:9px;letter-spacing:.3px;}
+.ms-badge{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px rgba(255,59,48,.8);}
+.ms-goal{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 20px;text-align:center;z-index:2;white-space:nowrap;max-width:78vw;overflow:hidden;text-overflow:ellipsis;}
+.ms-goal-lbl{font-size:9px;color:rgba(255,107,53,.8);letter-spacing:1.5px;font-family:'Space Mono',monospace;}
+.ms-goal-txt{font-size:14px;font-weight:700;color:#fff;margin-top:1px;}
+.ms-bottom{position:absolute;bottom:0;left:0;right:0;padding:10px 14px 36px;background:linear-gradient(to top,rgba(0,0,0,.8) 60%,transparent);display:flex;flex-direction:column;gap:8px;z-index:2;}
+.ms-achieve-btn{width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,rgba(255,107,53,.9),rgba(255,59,48,.9));color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;box-shadow:0 4px 20px rgba(255,59,48,.4);}
+.ms-start-btn{width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(99,102,241,.9));color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-start-btn:disabled{opacity:.7;}
+.ms-comment-row{display:flex;gap:8px;align-items:center;}
+.ms-inp-wrap{flex:1;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:24px;border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;padding:8px 14px;}
+.ms-inp{background:transparent;border:none;outline:none;color:#fff;font-size:14px;width:100%;font-family:'Noto Sans JP',sans-serif;}
+.ms-inp::placeholder{color:rgba(255,255,255,.4);}
+.ms-send-btn{background:#ff6b35;border:none;border-radius:20px;padding:8px 14px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-doverlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:19;opacity:0;pointer-events:none;transition:opacity .3s;}
+.ms-doverlay.on{opacity:1;pointer-events:all;}
+.ms-drawer{position:absolute;left:0;right:0;bottom:-72%;height:72%;background:rgba(8,4,18,.97);backdrop-filter:blur(24px);border-radius:24px 24px 0 0;z-index:20;transition:bottom .38s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.09);border-bottom:none;}
+.ms-drawer.on{bottom:0;}
+.ms-drawer-handle{display:flex;justify-content:center;padding:12px 0 6px;}
+.ms-drawer-bar{width:38px;height:4px;background:rgba(255,255,255,.22);border-radius:2px;}
+.ms-drawer-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07);padding:0 16px;}
+.ms-drawer-tab{flex:1;padding:10px 0;background:transparent;border:none;border-bottom:2px solid transparent;color:rgba(255,255,255,.35);font-size:13px;cursor:pointer;transition:all .2s;font-family:'Noto Sans JP',sans-serif;}
+.ms-drawer-tab.on{border-bottom-color:#ff6b35;color:#ff6b35;font-weight:700;}
+.ms-drawer-body{flex:1;overflow-y:auto;padding:14px 16px 24px;}
+.ms-task{background:rgba(255,107,53,.09);border:1px solid rgba(255,107,53,.28);border-radius:14px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.ms-task.done{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.07);}
+.ms-task-name{color:#fff;font-size:14px;font-weight:600;}
+.ms-task-name.done{color:rgba(255,255,255,.3);text-decoration:line-through;}
+.ms-task-from{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px;}
+.ms-task-clrbtn{background:#ff6b35;border:none;border-radius:8px;padding:4px 10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-task-donelbl{color:#10b981;font-size:11px;}
+.ms-insight-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border-radius:12px;padding:11px 14px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;}
 </style>
 </head>
 <body>
