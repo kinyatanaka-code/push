@@ -980,9 +980,34 @@ body>*{position:relative;z-index:1;}
         </div>
         <!-- タイムラプスタブ -->
         <div id="mp-timelapse" style="display:none;">
-          <div style="font-size:12px;color:rgba(180,150,255,.4);margin-bottom:12px;">配信終了後に自動生成される30秒ハイライト。クリックで詳細確認できます。</div>
+          <!-- ★ 手動アップロードエリア -->
+          <div class="dash-card" style="margin-bottom:16px;">
+            <div class="dash-card-title">📤 録画をアップロード</div>
+            <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信終了時にダウンロードされた録画ファイルをアップロードするとアーカイブで再生できます</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <select id="upload-archive-sel" style="flex:1;min-width:160px;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:8px 10px;color:#F0EEFF;font-size:12px;font-family:'Noto Sans JP',sans-serif;">
+                <option value="">紐付けるアーカイブを選択...</option>
+              </select>
+              <label style="background:rgba(180,80,255,.15);border:1px solid rgba(180,80,255,.3);color:#CF8FFF;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">
+                📁 ファイル選択
+                <input type="file" id="upload-rec-file" accept="video/*" style="display:none;" onchange="previewUpload(this)">
+              </label>
+              <button onclick="uploadRecording()" id="upload-rec-btn" style="background:linear-gradient(135deg,#7B1FA2,#E040FB);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">⬆️ アップロード</button>
+            </div>
+            <div id="upload-preview" style="margin-top:10px;display:none;">
+              <video id="upload-video-preview" controls style="width:100%;border-radius:8px;max-height:180px;background:#000;"></video>
+              <div id="upload-file-info" style="font-size:11px;color:rgba(180,150,255,.5);margin-top:4px;"></div>
+            </div>
+            <div id="upload-progress" style="display:none;margin-top:8px;">
+              <div style="background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;height:6px;">
+                <div id="upload-prog-bar" style="height:100%;background:linear-gradient(90deg,#7B1FA2,#E040FB);width:0%;transition:width .3s;"></div>
+              </div>
+              <div id="upload-prog-text" style="font-size:11px;color:rgba(180,150,255,.5);margin-top:4px;text-align:center;">アップロード中...</div>
+            </div>
+          </div>
+          <div style="font-size:12px;color:rgba(180,150,255,.4);margin-bottom:12px;">アーカイブ一覧（録画あり）</div>
           <div class="card-grid" id="mp-tl-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));"></div>
-          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">配信終了後に自動生成されます</span></div></div>
+          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">配信終了後に録画をアップロードしてください</span></div></div>
         </div>
         <!-- インサイトタブ -->
         <div id="mp-insight" style="display:none;">
@@ -1951,8 +1976,88 @@ function switchMpTab(tab){
     ge('mp-tab-'+t).classList.toggle('on',t===tab);
   });
   if(tab==='archive')fetchMpArchives();
-  if(tab==='timelapse')fetchMpTimelapse();
+  if(tab==='timelapse'){fetchMpTimelapse();populateArchiveSel();}
   if(tab==='insight')fetchInsights();
+}
+
+// ── 録画手動アップロード ──
+function previewUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const prev=ge('upload-preview');
+  const vid=ge('upload-video-preview');
+  const info=ge('upload-file-info');
+  if(prev) prev.style.display='';
+  if(vid) vid.src=URL.createObjectURL(file);
+  if(info) info.textContent=`${file.name}  （${Math.round(file.size/1024/1024*10)/10} MB）`;
+}
+
+async function populateArchiveSel(){
+  const sel=ge('upload-archive-sel'); if(!sel) return;
+  try{
+    const r=await fetch('/api/archives/mine',{headers:{Authorization:'Bearer '+AT}});
+    const d=await r.json();
+    const list=(d.archives||[]).filter(a=>!a.recordingUrl&&!a.recording_url);
+    sel.innerHTML='<option value="">紐付けるアーカイブを選択...</option>'+
+      list.map(a=>{
+        const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
+        return`<option value="${a.id}">${date} ${a.title||'無題'}</option>`;
+      }).join('');
+  }catch(e){}
+}
+
+async function uploadRecording(){
+  const file=ge('upload-rec-file')?.files[0];
+  const archiveId=ge('upload-archive-sel')?.value;
+  if(!file){ alert('ファイルを選択してください'); return; }
+  if(!archiveId){ alert('紐付けるアーカイブを選択してください'); return; }
+
+  const btn=ge('upload-rec-btn');
+  const prog=ge('upload-progress');
+  const progBar=ge('upload-prog-bar');
+  const progText=ge('upload-prog-text');
+
+  if(btn) btn.disabled=true;
+  if(prog) prog.style.display='';
+  if(progBar) progBar.style.width='20%';
+  if(progText) progText.textContent='アップロード中...';
+
+  try{
+    const fd=new FormData();
+    fd.append('file', file, file.name);
+    fd.append('streamId', archiveId);
+    if(progBar) progBar.style.width='50%';
+
+    const r=await fetch('/api/upload-recording',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+AT},
+      body:fd,
+    });
+    if(progBar) progBar.style.width='90%';
+
+    if(r.ok){
+      const d=await r.json();
+      if(progBar) progBar.style.width='100%';
+      if(progText) progText.textContent='✅ アップロード完了！';
+      if(btn) btn.disabled=false;
+      // リセット
+      setTimeout(()=>{
+        if(prog) prog.style.display='none';
+        if(progBar) progBar.style.width='0%';
+        const prev=ge('upload-preview');if(prev)prev.style.display='none';
+        const inp=ge('upload-rec-file');if(inp)inp.value='';
+        fetchMpTimelapse();
+        populateArchiveSel();
+      },1500);
+    }else{
+      alert('アップロードに失敗しました');
+      if(btn) btn.disabled=false;
+      if(prog) prog.style.display='none';
+    }
+  }catch(e){
+    alert('エラー: '+e.message);
+    if(btn) btn.disabled=false;
+    if(prog) prog.style.display='none';
+  }
 }
 
 // マイページのタイムラプス
@@ -2056,29 +2161,39 @@ async function stopRecording(){
         if(!recChunks.length){ resolve(null); return; }
         const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'video/webm'});
         const ext=blob.type.includes('mp4')?'mp4':'webm';
-        const fname=`rec_${recStreamId||'stream'}_${Date.now()}.${ext}`;
+        const fname=`push_rec_${recStreamId||'stream'}_${Date.now()}.${ext}`;
 
-        // サーバーにアップロード
-        setStatus('📤 録画をアップロード中...');
-        const fd=new FormData();
-        fd.append('file',blob,fname);
-        fd.append('streamId',recStreamId||'');
-        const r=await fetch('/api/upload-recording',{
-          method:'POST',
-          headers:{Authorization:'Bearer '+AT},
-          body:fd,
-        });
-        if(r.ok){
-          const d=await r.json();
-          console.log('✅ 録画アップロード完了:', d.url);
-          setStatus('✅ 録画保存完了');
-          resolve(d.url);
-        }else{
-          console.warn('録画アップロード失敗:', r.status);
+        // ★ 端末に自動ダウンロード
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download=fname; a.click();
+        setTimeout(()=>URL.revokeObjectURL(url),5000);
+        setStatus('💾 録画をダウンロードしました');
+        console.log('💾 録画ダウンロード:', fname, Math.round(blob.size/1024)+'KB');
+
+        // サーバーにもアップロード試みる（失敗しても続行）
+        try{
+          const fd=new FormData();
+          fd.append('file',blob,fname);
+          fd.append('streamId',recStreamId||'');
+          const r=await fetch('/api/upload-recording',{
+            method:'POST',
+            headers:{Authorization:'Bearer '+AT},
+            body:fd,
+          });
+          if(r.ok){
+            const d=await r.json();
+            console.log('✅ サーバー録画保存完了:', d.url);
+            resolve(d.url);
+          }else{
+            resolve(null);
+          }
+        }catch(e){
+          console.warn('サーバーアップロード失敗（ローカル保存済み）:', e.message);
           resolve(null);
         }
       }catch(e){
-        console.warn('録画アップロードエラー:', e.message);
+        console.warn('録画エラー:', e.message);
         resolve(null);
       }finally{
         recChunks=[];
