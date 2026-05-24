@@ -2161,21 +2161,21 @@ async function stopRecording(){
         if(!recChunks.length){ resolve(null); return; }
         const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'video/webm'});
         const ext=blob.type.includes('mp4')?'mp4':'webm';
-        const fname=`push_rec_${recStreamId||'stream'}_${Date.now()}.${ext}`;
+        const sid=recStreamId||'stream';
+        const fname=`push_rec_${sid}_${Date.now()}.${ext}`;
 
-        // ★ 端末に自動ダウンロード
-        const url=URL.createObjectURL(blob);
+        // ★ ①端末に自動ダウンロード
+        const objUrl=URL.createObjectURL(blob);
         const a=document.createElement('a');
-        a.href=url; a.download=fname; a.click();
-        setTimeout(()=>URL.revokeObjectURL(url),5000);
-        setStatus('💾 録画をダウンロードしました');
-        console.log('💾 録画ダウンロード:', fname, Math.round(blob.size/1024)+'KB');
+        a.href=objUrl; a.download=fname; a.click();
+        setTimeout(()=>URL.revokeObjectURL(objUrl),5000);
 
-        // サーバーにもアップロード試みる（失敗しても続行）
+        // ★ ②サーバーに自動アップロード
+        setStatus('📤 録画をサーバーに保存中...');
+        const fd=new FormData();
+        fd.append('file',blob,fname);
+        fd.append('streamId',sid);
         try{
-          const fd=new FormData();
-          fd.append('file',blob,fname);
-          fd.append('streamId',recStreamId||'');
           const r=await fetch('/api/upload-recording',{
             method:'POST',
             headers:{Authorization:'Bearer '+AT},
@@ -2183,13 +2183,16 @@ async function stopRecording(){
           });
           if(r.ok){
             const d=await r.json();
-            console.log('✅ サーバー録画保存完了:', d.url);
+            setStatus('✅ 録画をアーカイブに保存しました');
+            console.log('✅ 自動アップロード完了:', d.url);
             resolve(d.url);
           }else{
+            setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
             resolve(null);
           }
         }catch(e){
-          console.warn('サーバーアップロード失敗（ローカル保存済み）:', e.message);
+          setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
+          console.warn('自動アップロード失敗:', e.message);
           resolve(null);
         }
       }catch(e){
