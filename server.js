@@ -527,6 +527,7 @@ app.post('/api/upload-recording', async (req, res) => {
     if (!s) return res.status(401).json({ error: '未ログイン' });
 
     const streamId = req.query.streamId || req.headers['x-stream-id'] || '';
+    console.log('📤 録画アップロード受信 streamId:', streamId||'(なし)');
     const chunks   = [];
     req.on('data', c => chunks.push(c));
     req.on('end', async () => {
@@ -565,23 +566,41 @@ app.post('/api/upload-recording', async (req, res) => {
         const url = `/recordings/${fname}`;
         console.log(`📹 録画保存: ${fname} (${Math.round(parts[0].data.length/1024)}KB)`);
 
-        // アーカイブにrecordingUrlを更新
-        // ファイル名形式: rec_[streamId(ハイフンなし)]_[timestamp].webm
-        const sidRaw = fname.replace(/^rec_/, '').replace(/_\d+\.(webm|mp4)$/, '');
-        // UUID形式に戻す（8-4-4-4-12）
-        const sid = sidRaw.length === 32
-          ? `${sidRaw.slice(0,8)}-${sidRaw.slice(8,12)}-${sidRaw.slice(12,16)}-${sidRaw.slice(16,20)}-${sidRaw.slice(20)}`
-          : sidRaw;
-        console.log(`🔗 録画とアーカイブを紐付け: ${sid}`);
+        // ★ streamIdはクエリパラメータから直接取得（最優先）
+        let sid = streamId;
+        if (!sid) {
+          // フォールバック：ファイル名から抽出してUUID変換
+          const sidRaw = fname.replace(/^push_rec_/, '').replace(/^rec_/, '').replace(/_\d+\.(webm|mp4)$/, '');
+          sid = sidRaw.length === 32
+            ? `${sidRaw.slice(0,8)}-${sidRaw.slice(8,12)}-${sidRaw.slice(12,16)}-${sidRaw.slice(16,20)}-${sidRaw.slice(20)}`
+            : sidRaw;
+        }
+        console.log(`🔗 アーカイブ紐付け: "${sid}"`);
+        console.log(`📋 アーカイブ一覧:`, [...archiveMap.keys()].slice(0,5).join(', '));
+
+        let linked = false;
         if (archiveMap.has(sid)) {
           archiveMap.get(sid).recordingUrl = url;
           saveJSON(ARCHIVES_FILE, Object.fromEntries(archiveMap));
-          console.log(`✅ アーカイブ更新完了: ${sid}`);
-        } else {
-          console.warn(`⚠️ アーカイブが見つかりません: ${sid}`);
+          console.log(`✅ 紐付け成功: ${sid}`);
+          linked = true;
         }
+        if (!linked) {
+          // ハイフンなしでも試みる
+          for (const [key, val] of archiveMap) {
+            if (key.replace(/-/g,'') === sid.replace(/-/g,'')) {
+              val.recordingUrl = url;
+              saveJSON(ARCHIVES_FILE, Object.fromEntries(archiveMap));
+              console.log(`✅ 紐付け成功(変換): ${key}`);
+              linked = true;
+              break;
+            }
+          }
+        }
+        if (!linked) console.warn(`⚠️ アーカイブが見つかりません: ${sid}`);
         if (db) {
-          await db.query('UPDATE archives SET recording_url=$1 WHERE id=$2', [url, sid]).catch(()=>{});
+          await db.query('UPDATE archives SET recording_url=$1 WHERE id::text LIKE $2',
+            [url, sid.replace(/-/g,'')+'%']).catch(()=>{});
         }
 
         res.json({ ok:true, url });

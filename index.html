@@ -2027,7 +2027,7 @@ async function uploadRecording(){
     fd.append('streamId', archiveId);
     if(progBar) progBar.style.width='50%';
 
-    const r=await fetch('/api/upload-recording',{
+    const r=await fetch(`/api/upload-recording?streamId=${encodeURIComponent(archiveId)}`,{
       method:'POST',
       headers:{Authorization:'Bearer '+AT},
       body:fd,
@@ -2035,8 +2035,9 @@ async function uploadRecording(){
     if(progBar) progBar.style.width='90%';
 
     if(r.ok){
-      const d=await r.json();
+    if(r.ok){
       if(progBar) progBar.style.width='100%';
+      alert('✅ 録画をアーカイブに保存しました！アーカイブタブで確認できます。');
       if(progText) progText.textContent='✅ アップロード完了！';
       if(btn) btn.disabled=false;
       // リセット
