@@ -1913,18 +1913,23 @@ function slidePickup(dir){goPickup(pickupIdx+dir);}
 // ページナビ
 // ======================================
 function showPage(name){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
-  ge('page-'+name)?.classList.add('on');
+  document.querySelectorAll('.page').forEach(p=>{
+    p.classList.remove('on');
+    p.style.display=''; // インラインスタイルをリセット
+  });
+  const target=ge('page-'+name);
+  if(target){
+    target.classList.add('on');
+    target.style.display='block';
+  }
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('on'));
   ge('sb-'+name)?.classList.add('on');
   if(name==='mypage'){fetchInsights();fetchRPGStats();fetchMpArchives();}
   if(name==='home'){fetchStreams();}
   if(name==='quest'){updateQuestPage();renderQuestCatalog();}
-  // ★ スマホボトムナビ更新
-  if(window.innerWidth<=768){
-    const nav=ge('mobile-nav');
-    if(nav) nav.style.display='flex';
-  }
+  // ★ スマホボトムナビを表示
+  const nav=ge('mobile-nav');
+  if(nav) nav.style.display=window.innerWidth<=768?'flex':'none';
 }
 
 // ── ホームタブ切り替え ──
