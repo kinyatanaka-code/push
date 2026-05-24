@@ -543,10 +543,19 @@ app.post('/api/upload-recording', async (req, res) => {
         console.log(`📹 録画保存: ${fname} (${Math.round(parts[0].data.length/1024)}KB)`);
 
         // アーカイブにrecordingUrlを更新
-        const sid = fname.replace(/rec_|_\d+\.(webm|mp4)/g,'');
+        // ファイル名形式: rec_[streamId(ハイフンなし)]_[timestamp].webm
+        const sidRaw = fname.replace(/^rec_/, '').replace(/_\d+\.(webm|mp4)$/, '');
+        // UUID形式に戻す（8-4-4-4-12）
+        const sid = sidRaw.length === 32
+          ? `${sidRaw.slice(0,8)}-${sidRaw.slice(8,12)}-${sidRaw.slice(12,16)}-${sidRaw.slice(16,20)}-${sidRaw.slice(20)}`
+          : sidRaw;
+        console.log(`🔗 録画とアーカイブを紐付け: ${sid}`);
         if (archiveMap.has(sid)) {
           archiveMap.get(sid).recordingUrl = url;
-          saveArchives();
+          saveJSON(ARCHIVES_FILE, Object.fromEntries(archiveMap));
+          console.log(`✅ アーカイブ更新完了: ${sid}`);
+        } else {
+          console.warn(`⚠️ アーカイブが見つかりません: ${sid}`);
         }
         if (db) {
           await db.query('UPDATE archives SET recording_url=$1 WHERE id=$2', [url, sid]).catch(()=>{});
