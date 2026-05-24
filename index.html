@@ -717,6 +717,10 @@ body>*{position:relative;z-index:1;}
 .ms-doverlay.on{opacity:1;pointer-events:all;}
 .ms-drawer{position:absolute;left:0;right:0;bottom:-72%;height:72%;background:rgba(8,4,18,.97);backdrop-filter:blur(24px);border-radius:24px 24px 0 0;z-index:20;transition:bottom .38s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.09);border-bottom:none;}
 .ms-drawer.on{bottom:0;}
+/* 配信者スマホ：流れるコメント */
+#ms-comment-flow{position:absolute;bottom:115px;left:12px;right:72px;pointer-events:none;overflow:hidden;z-index:2;display:flex;flex-direction:column-reverse;gap:4px;max-height:45%;}
+.ms-fcmt{display:inline-block;background:rgba(0,0,0,.55);color:#fff;font-size:13px;border-radius:20px;padding:5px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;opacity:0;animation:ms-fcmt-anim 6s linear forwards;}
+@keyframes ms-fcmt-anim{0%{opacity:0;transform:translateX(-6px)}8%{opacity:1;transform:translateX(0)}80%{opacity:1}100%{opacity:0}}
 .ms-drawer-handle{display:flex;justify-content:center;padding:12px 0 6px;}
 .ms-drawer-bar{width:38px;height:4px;background:rgba(255,255,255,.22);border-radius:2px;}
 .ms-drawer-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.07);padding:0 16px;}
@@ -1081,6 +1085,8 @@ body>*{position:relative;z-index:1;}
           <div class="ms-goal-lbl">TODAY'S GOAL</div>
           <div class="ms-goal-txt" id="ms-goal-txt">目標</div>
         </div>
+        <!-- 流れるコメント（配信者スマホ） -->
+        <div id="ms-comment-flow"></div>
         <!-- 下部エリア -->
         <div class="ms-bottom">
           <div style="display:flex;gap:8px;">
@@ -2861,6 +2867,31 @@ function chatBoth(user, text, type) {
       d.innerHTML = `<span style="font-weight:700;color:rgba(180,150,255,.8);">${esc(user)}</span> <span style="color:rgba(220,200,255,.85);">${esc(text)}</span>`;
       mc.appendChild(d);
       mc.scrollTop = mc.scrollHeight;
+    }
+  }
+  // ★ 配信者スマホオーバーレイにコメントを流す
+  if (isMobile() && G.role === 'streamer') {
+    const flow = ge('ms-comment-flow');
+    if (flow) {
+      const el = document.createElement('div');
+      el.className = 'ms-fcmt';
+      if (type === 'sys') {
+        el.style.color = 'rgba(255,140,80,.9)';
+        el.textContent = text;
+      } else {
+        el.innerHTML = `<span style="font-weight:700;color:rgba(255,180,100,.9);">${esc(user)}</span> ${esc(text)}`;
+      }
+      flow.prepend(el);
+      setTimeout(() => el.remove(), 6200);
+    }
+    // コメントカウント更新
+    if (type !== 'sys') {
+      const cnt = ge('ms-cmts');
+      if (cnt) cnt.textContent = (parseInt(cnt.textContent || '0') + 1);
+    }
+    // ドロワーのコメントタブが開いていれば自動更新
+    if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx === 1) {
+      msDrRender();
     }
   }
 }
