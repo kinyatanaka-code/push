@@ -2046,6 +2046,7 @@ async function uploadRecording(){
         const prev=ge('upload-preview');if(prev)prev.style.display='none';
         const inp=ge('upload-rec-file');if(inp)inp.value='';
         fetchMpTimelapse();
+        fetchMpArchives(); // ★ アーカイブも更新
         populateArchiveSel();
       },1500);
     }else{
@@ -2220,7 +2221,8 @@ async function fetchMpArchives(){
       const dur=Math.floor((a.durationSec||a.duration_sec||0)/60)+'分';
       const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
       const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
-      return`<div class="scard rarity-n" onclick="openArchModal(mpArchList[${i}])" style="cursor:pointer;"><div class="scard-thumb cat-${a.category||'その他'}"><div class="scard-emoji">${a.emoji||'🎯'}</div><div class="wbtn"><span>📊 詳細を見る</span></div><div class="scard-arch-badge">📼 ${date}</div><div class="scard-viewers">⏱ ${dur}</div></div><div class="scard-body"><div class="scard-title">${esc(a.title)}</div><div class="scard-bot" style="margin-top:6px;"><div class="scard-cat">${a.category}</div><div class="scard-gift">🏆 ${ach}</div></div></div></div>`;
+      const hasRec=!!(a.recordingUrl||a.recording_url);
+      return`<div class="scard rarity-n" onclick="openArchModal(window.mpArchList[${i}])" style="cursor:pointer;"><div class="scard-thumb cat-${a.category||'その他'}"><div class="scard-emoji">${a.emoji||'🎯'}</div><div class="wbtn"><span>${hasRec?'▶ 動画を見る':'📊 詳細を見る'}</span></div><div class="scard-arch-badge">${hasRec?'🎬 録画あり':'📼 '+date}</div><div class="scard-viewers">⏱ ${dur}</div></div><div class="scard-body"><div class="scard-title">${esc(a.title)}</div><div class="scard-bot" style="margin-top:6px;"><div class="scard-cat">${a.category}</div><div class="scard-gift">🏆 ${ach}</div></div></div></div>`;
     }).join('');
     window.mpArchList=list;
   }catch(e){}
