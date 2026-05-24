@@ -652,36 +652,40 @@ body>*{position:relative;z-index:1;}
   .gbl{font-size:8px;}
   .gbv{font-size:12px;}
 }
-/* == スマホ縦型ライブ専用レイアウト == */
-
-
-@media(min-width:769px){.mobile-chat-btn{display:none;}.mobile-close{display:none;}}
-/* ★ スマホボトムナビ対応 */
-
-
-
-
+/* == スマホ配信者UI統合CSS == */
 @media(max-width:768px){
-  /* 配信者のssideをコンパクトに */
-  #sside-s .panel{padding:8px 12px;}
-  #sside-s .panel-lbl{font-size:9px;margin-bottom:5px;}
-  #sside-s .stat3{gap:4px;}
-  #sside-s .stbox{padding:5px;}
-  #sside-s .stval{font-size:12px;}
-  #sside-s .stlbl{font-size:7px;}
-  #sside-s .start-btn{font-size:12px;padding:9px;}
-  #sside-s .abtn{font-size:12px;padding:9px;}
-  #sside-s .task-panel{padding:6px 12px;}
-  #sside-s .task-panel-title{font-size:10px;}
-  #sside-s .chathd{font-size:9px;padding:6px 10px;}
-  #sside-s .chatinp{font-size:12px;}
-  /* タイマーを動画内の右上に小さく */
-  #s-timer{font-size:8px!important;padding:1px 4px!important;}
+  /* PC要素を完全非表示 */
+  #sc-s .sh{display:none!important;}
+  #sc-s #sside-s{display:none!important;}
+  #sc-s .giftbar{display:none!important;}
+  #sc-s .rpg-overlay{display:none!important;}
+  #sc-s .stream-stats-overlay{display:none!important;}
+  #sc-s .stream-center{display:none!important;}
+  #sc-s .stimer{display:none!important;}
+  #sc-s .combo-wrap{display:none!important;}
+  .live-tabs{display:none!important;}
+
+  /* sbodyをフルスクリーンに */
+  #sc-s .sbody{
+    position:absolute!important;inset:0!important;
+    display:block!important;height:100%!important;
+  }
+  /* 動画をフルスクリーンに */
+  #sc-s .smain{
+    position:absolute!important;inset:0!important;
+    width:100%!important;max-height:none!important;height:100%!important;
+    z-index:1!important;
+    aspect-ratio:unset!important;
+  }
+  #sc-s .smain #local-video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;}
+  #sc-s .smain #local-video video{width:100%!important;height:100%!important;object-fit:cover!important;}
+
+  /* オーバーレイを表示（背景は透明で動画を見せる）*/
+  #mob-s-overlay{display:block!important;background:transparent!important;}
 }
 
 /* ── モバイル配信者オーバーレイ ── */
 #mob-s-overlay{display:none;position:absolute;inset:0;overflow:hidden;z-index:15;}
-@media(max-width:768px){#mob-s-overlay{display:block!important;}}
 .ms-hud{position:absolute;top:0;left:0;right:0;padding:52px 16px 20px;background:linear-gradient(to bottom,rgba(0,0,0,.65),transparent);display:flex;align-items:center;justify-content:space-between;z-index:2;}
 .ms-live-pill{background:#ff3b30;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:800;color:#fff;letter-spacing:1.5px;display:flex;align-items:center;gap:5px;}
 .ms-live-dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:msblink 1.2s infinite;}
