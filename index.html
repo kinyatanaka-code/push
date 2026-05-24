@@ -1051,6 +1051,72 @@ body>*{position:relative;z-index:1;}
         <div class="livebadge"><div class="ldot"></div>LIVE</div>
         <div class="vcnt">👁 <span id="s-vcnt">0</span></div>
       </div>
+
+      <!-- ★ スマホ配信者フルスクリーンUI -->
+      <!-- 上部HUD -->
+      <div class="mob-hud" id="mob-hud" style="display:none;">
+        <div class="mob-hud-left">
+          <div class="mob-live-pill" id="mob-live-pill" style="display:none;">
+            <div class="mob-live-dot"></div>LIVE
+          </div>
+          <span class="mob-timer-txt" id="mob-timer">00:00:00</span>
+        </div>
+        <div class="mob-hud-right">
+          <span class="mob-viewer-cnt">👁 <span id="mob-viewers">0</span></span>
+          <button class="mob-close-btn" onclick="exitLive()">✕</button>
+        </div>
+      </div>
+
+      <!-- 右サイドボタン -->
+      <div class="mob-side-btns" id="mob-side-btns" style="display:none;">
+        <button class="mob-side-btn" onclick="openMobDrawer(2)">
+          <span class="mob-side-btn-icon">💪</span>
+          <span class="mob-side-btn-val" id="mob-push-cnt">0</span>
+          <span class="mob-side-btn-lbl">PUSH</span>
+        </button>
+        <button class="mob-side-btn bomb" onclick="openMobDrawer(0)">
+          <span class="mob-side-btn-icon">💣</span>
+          <span class="mob-side-btn-val orange" id="mob-task-cnt">0</span>
+          <span class="mob-side-btn-lbl">試練</span>
+          <div class="mob-side-badge" id="mob-task-badge" style="display:none;"></div>
+        </button>
+        <button class="mob-side-btn" onclick="openMobDrawer(1)">
+          <span class="mob-side-btn-icon">💬</span>
+          <span class="mob-side-btn-val" id="mob-comment-cnt">0</span>
+          <span class="mob-side-btn-lbl">コメント</span>
+        </button>
+      </div>
+
+      <!-- ゴールカード -->
+      <div class="mob-goal-card" id="mob-goal-card" style="display:none;">
+        <div class="mob-goal-lbl">TODAY'S GOAL</div>
+        <div class="mob-goal-txt" id="mob-goal-txt">目標</div>
+      </div>
+
+      <!-- 下部コントロール -->
+      <div class="mob-bottom" id="mob-bottom" style="display:none;">
+        <button class="mob-achieve-btn" id="mob-achieve-btn" onclick="openReward()">🏆 目標達成を宣言する</button>
+        <button class="mob-start-btn" id="mob-start-btn" onclick="startLive()" disabled>📷 カメラ接続中...</button>
+        <div class="mob-comment-row">
+          <div class="mob-comment-wrap">
+            <input class="mob-comment-inp" id="mob-inp-s" placeholder="コメント..." onkeydown="if(event.key==='Enter')sendMobStreamerMsg()">
+          </div>
+          <button class="mob-send-btn" onclick="sendMobStreamerMsg()">送信</button>
+        </div>
+      </div>
+
+      <!-- ドロワーオーバーレイ -->
+      <div class="mob-drawer-overlay" id="mob-drawer-overlay" onclick="closeMobDrawer()"></div>
+      <!-- ドロワー本体 -->
+      <div class="mob-drawer" id="mob-drawer">
+        <div class="mob-drawer-handle"><div class="mob-drawer-handle-bar"></div></div>
+        <div class="mob-drawer-tabs">
+          <button class="mob-drawer-tab on" id="mob-dtab-0" onclick="switchMobDrawerTab(0)">💣 タスク</button>
+          <button class="mob-drawer-tab" id="mob-dtab-1" onclick="switchMobDrawerTab(1)">💬 コメント</button>
+          <button class="mob-drawer-tab" id="mob-dtab-2" onclick="switchMobDrawerTab(2)">📊 インサイト</button>
+        </div>
+        <div class="mob-drawer-content" id="mob-drawer-content"></div>
+      </div>
       <div class="sbody">
         <div class="smain" id="smain">
           <div id="local-video"></div>
@@ -1642,6 +1708,8 @@ socket.on('task_added',d=>{
   G_tasks[d.task.taskId]=d.task;
   renderTaskList();
   updateQuestPage();
+  updateMobTaskBadge();
+  renderMobDrawerContent();
   chatBoth('SYSTEM','💣 '+d.task.sender+'がタスク「'+d.task.trial+'」+'+d.task.boost+'%を投下！','sys');
 });
 socket.on('task_vote_start',d=>{
@@ -2260,6 +2328,8 @@ async function goLive(){
   {const mn=ge('mobile-nav');if(mn)mn.style.display='none';}
   const tabs=ge('live-tabs');if(tabs)tabs.style.display='flex';
   swLive('s');
+  // ★ スマホUI初期化
+  setTimeout(()=>initMobStreamerUI(), 100);
   initAgora('streamer',{streamId,goal,title,category:cat,emoji:EMOJI_MAP[cat]||'🎯',isPrivate});
 }
 
@@ -2610,6 +2680,97 @@ function onPush(){
 }
 
 // ======================================
+// ======================================
+// スマホ配信者フルスクリーンUI
+// ======================================
+let mobDrawerTab=0, mobCommentCount=0;
+
+function initMobStreamerUI(){
+  if(!isMobile())return;
+  ge('mob-hud').style.display='';
+  ge('mob-side-btns').style.display='';
+  ge('mob-goal-card').style.display='';
+  ge('mob-bottom').style.display='';
+  const goalEl=ge('mob-goal-txt');
+  if(goalEl&&G.goal)goalEl.textContent=G.goal;
+  // start-btnとmob-start-btnを同期
+  const origBtn=ge('start-btn'), mobBtn=ge('mob-start-btn');
+  if(origBtn&&mobBtn){
+    const sync=()=>{
+      mobBtn.disabled=origBtn.disabled;
+      mobBtn.textContent=origBtn.textContent;
+      if(origBtn.textContent.includes('終了')||origBtn.textContent.includes('配信中')){
+        mobBtn.style.background='linear-gradient(135deg,rgba(220,30,30,.9),rgba(180,20,20,.9))';
+        mobBtn.onclick=exitLive;
+        ge('mob-achieve-btn').classList.add('visible');
+        ge('mob-live-pill').style.display='flex';
+      }
+    };
+    sync();
+    new MutationObserver(sync).observe(origBtn,{attributes:true,childList:true,characterData:true,subtree:true});
+  }
+}
+
+function sendMobStreamerMsg(){
+  const inp=ge('mob-inp-s');
+  if(!inp||!inp.value.trim())return;
+  socket.emit('chat_message',{streamId:currentStreamId,text:inp.value.trim(),token:AT});
+  inp.value='';
+}
+
+function openMobDrawer(tab){
+  mobDrawerTab=tab;
+  ge('mob-drawer-overlay').classList.add('open');
+  ge('mob-drawer').classList.add('open');
+  switchMobDrawerTab(tab);
+}
+function closeMobDrawer(){
+  ge('mob-drawer-overlay').classList.remove('open');
+  ge('mob-drawer').classList.remove('open');
+}
+function switchMobDrawerTab(tab){
+  mobDrawerTab=tab;
+  [0,1,2].forEach(i=>ge('mob-dtab-'+i)?.classList.toggle('on',i===tab));
+  renderMobDrawerContent();
+}
+function renderMobDrawerContent(){
+  const el=ge('mob-drawer-content');if(!el)return;
+  if(mobDrawerTab===0){
+    const tasks=Object.values(G_tasks);
+    if(!tasks.length){el.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:24px;">ボムはまだありません</div>';return;}
+    el.innerHTML=tasks.map(t=>{
+      const cleared=t.status==='approved';
+      return`<div class="mob-task-card${cleared?' cleared':''}"><div><div class="mob-task-name${cleared?' cleared':''}">${esc(t.trial)}</div><div class="mob-task-from">from ${esc(t.sender)} · <span style="color:#ff6b35">+${t.boost}%</span></div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;"><div style="color:#ff6b35;font-size:13px;font-weight:700;">+${t.boost}%</div>${cleared?'<span class="mob-task-cleared-lbl">✓ クリア済</span>':`<button class="mob-task-clear-btn" onclick="completeTask('${t.taskId}');renderMobDrawerContent()">クリア</button>`}</div></div>`;
+    }).join('');
+  }else if(mobDrawerTab===1){
+    const chatEl=ge('chat-s');
+    el.innerHTML=chatEl?.innerHTML||'<div style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:24px;">コメントはまだありません</div>';
+  }else{
+    const stats=[
+      {label:'ギフト合計',value:'¥'+(G.giftTotal||0).toLocaleString(),icon:'🎁',color:'#ff6b35'},
+      {label:'視聴者数',value:G.liveViewers||0,icon:'👁',color:'#0ea5e9'},
+      {label:'PUSH数',value:G.totalPushes||0,icon:'💪',color:'#7c3aed'},
+      {label:'試練クリア',value:Object.values(G_tasks).filter(t=>t.status==='approved').length+' / '+Object.values(G_tasks).length,icon:'💣',color:'#10b981'},
+      {label:'ブースト',value:'×'+(G.boost||1).toFixed(1),icon:'⚡',color:'#f59e0b'},
+    ];
+    el.innerHTML=stats.map(s=>`<div class="mob-insight-row"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:18px;">${s.icon}</span><span style="color:rgba(255,255,255,.55);font-size:13px;">${s.label}</span></div><span style="color:${s.color};font-size:16px;font-weight:700;">${s.value}</span></div>`).join('');
+  }
+}
+function updateMobTaskBadge(){
+  if(!isMobile())return;
+  const pending=Object.values(G_tasks).filter(t=>t.status==='pending').length;
+  const el=ge('mob-task-cnt');if(el)el.textContent=pending;
+  const badge=ge('mob-task-badge');if(badge)badge.style.display=pending>0?'':'none';
+}
+function updMobUI(){
+  if(!isMobile())return;
+  const timerEl=ge('mob-timer'),srcEl=ge('s-timer');
+  if(timerEl&&srcEl)timerEl.textContent=srcEl.textContent;
+  const vcntEl=ge('mob-viewers'),srcVEl=ge('s-vcnt');
+  if(vcntEl&&srcVEl)vcntEl.textContent=srcVEl.textContent;
+}
+setInterval(updMobUI,500);
+
 // スマホスライドメニュー
 function openMobileMenu(){
   const menu=ge('mobile-menu'),overlay=ge('mobile-menu-overlay');
