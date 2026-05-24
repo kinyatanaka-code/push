@@ -701,18 +701,18 @@ body>*{position:relative;z-index:1;}
 .ms-btn-val.or{color:#ff6b35;}
 .ms-btn-lbl{color:rgba(255,255,255,.45);font-size:9px;letter-spacing:.3px;}
 .ms-badge{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px rgba(255,59,48,.8);}
-.ms-goal{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 20px;text-align:center;z-index:2;white-space:nowrap;max-width:78vw;overflow:hidden;text-overflow:ellipsis;}
+.ms-goal{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:6px 16px;text-align:center;z-index:2;white-space:nowrap;max-width:70vw;overflow:hidden;text-overflow:ellipsis;}
 .ms-goal-lbl{font-size:9px;color:rgba(255,107,53,.8);letter-spacing:1.5px;font-family:'Space Mono',monospace;}
 .ms-goal-txt{font-size:14px;font-weight:700;color:#fff;margin-top:1px;}
-.ms-bottom{position:absolute;bottom:0;left:0;right:0;padding:10px 14px 36px;background:linear-gradient(to top,rgba(0,0,0,.8) 60%,transparent);display:flex;flex-direction:column;gap:8px;z-index:2;}
-.ms-achieve-btn{width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,rgba(255,107,53,.9),rgba(255,59,48,.9));color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;box-shadow:0 4px 20px rgba(255,59,48,.4);}
-.ms-start-btn{width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,.9),rgba(99,102,241,.9));color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-bottom{position:absolute;bottom:0;left:0;right:0;padding:8px 14px 28px;background:linear-gradient(to top,rgba(0,0,0,.75) 70%,transparent);display:flex;flex-direction:column;gap:6px;z-index:2;}
+.ms-achieve-btn{width:100%;padding:9px;border:none;border-radius:12px;background:linear-gradient(135deg,rgba(255,107,53,.85),rgba(255,59,48,.85));color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-start-btn{width:100%;padding:9px;border:none;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,.85),rgba(99,102,241,.85));color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
 .ms-start-btn:disabled{opacity:.7;}
 .ms-comment-row{display:flex;gap:8px;align-items:center;}
-.ms-inp-wrap{flex:1;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:24px;border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;padding:8px 14px;}
-.ms-inp{background:transparent;border:none;outline:none;color:#fff;font-size:14px;width:100%;font-family:'Noto Sans JP',sans-serif;}
+.ms-inp-wrap{flex:1;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-radius:20px;border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;padding:6px 12px;}
+.ms-inp{background:transparent;border:none;outline:none;color:#fff;font-size:13px;width:100%;font-family:'Noto Sans JP',sans-serif;}
 .ms-inp::placeholder{color:rgba(255,255,255,.4);}
-.ms-send-btn{background:#ff6b35;border:none;border-radius:20px;padding:8px 14px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+.ms-send-btn{background:#ff6b35;border:none;border-radius:18px;padding:7px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
 .ms-doverlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:19;opacity:0;pointer-events:none;transition:opacity .3s;}
 .ms-doverlay.on{opacity:1;pointer-events:all;}
 .ms-drawer{position:absolute;left:0;right:0;bottom:-72%;height:72%;background:rgba(8,4,18,.97);backdrop-filter:blur(24px);border-radius:24px 24px 0 0;z-index:20;transition:bottom .38s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.09);border-bottom:none;}
@@ -1083,8 +1083,10 @@ body>*{position:relative;z-index:1;}
         </div>
         <!-- 下部エリア -->
         <div class="ms-bottom">
-          <button class="ms-achieve-btn" id="ms-achieve-btn" style="display:none;" onclick="openReward()">🏆 目標達成を宣言する</button>
-          <button class="ms-start-btn" id="ms-start-btn" disabled onclick="startLive()">📷 カメラ接続中...</button>
+          <div style="display:flex;gap:8px;">
+            <button class="ms-achieve-btn" id="ms-achieve-btn" style="display:none;flex:1;" onclick="openReward()">🏆 目標達成</button>
+            <button class="ms-start-btn" id="ms-start-btn" disabled onclick="startLive()" style="flex:1;">📷 接続中...</button>
+          </div>
           <div class="ms-comment-row">
             <div class="ms-inp-wrap"><input class="ms-inp" id="ms-inp" placeholder="コメント..." onkeydown="if(event.key==='Enter')msSend()"></div>
             <button class="ms-send-btn" onclick="msSend()">送信</button>
