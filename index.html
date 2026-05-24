@@ -2108,6 +2108,7 @@ async function uploadRecording(){
 
     if(r.ok){
       if(progBar) progBar.style.width='100%';
+      alert('✅ 録画をアーカイブに保存しました！アーカイブタブで確認できます。');
       if(progText) progText.textContent='✅ アップロード完了！';
       if(btn) btn.disabled=false;
       setTimeout(()=>{
@@ -2118,9 +2119,7 @@ async function uploadRecording(){
         fetchMpTimelapse();
         fetchMpArchives();
         populateArchiveSel();
-        // ★ アーカイブタブへ自動移動して動画を確認できるようにする
-        switchMpTab('archive');
-      },1000);
+      },1500);
     }else{
       alert('アップロードに失敗しました');
       if(btn) btn.disabled=false;
@@ -2230,46 +2229,57 @@ async function stopRecording(){
   return new Promise(resolve=>{
     if(!mediaRecorder||mediaRecorder.state==='inactive'){ resolve(null); return; }
     mediaRecorder.onstop=async()=>{
+      let blob=null;
       try{
         if(!recChunks.length){ resolve(null); return; }
-        const blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'video/webm'});
+        blob=new Blob(recChunks,{type:mediaRecorder.mimeType||'video/webm'});
         const ext=blob.type.includes('mp4')?'mp4':'webm';
         const sid=recStreamId||'stream';
         const fname=`push_rec_${sid}_${Date.now()}.${ext}`;
 
-        // ★ ①端末に自動ダウンロード
-        const objUrl=URL.createObjectURL(blob);
-        const a=document.createElement('a');
-        a.href=objUrl; a.download=fname; a.click();
-        setTimeout(()=>URL.revokeObjectURL(objUrl),5000);
-
-        // ★ ②サーバーに自動アップロード
+        // ★ サーバーに直接アップロード（ダウンロードなし）
+        // 進捗オーバーレイを表示
+        showUploadOverlay(blob.size);
         setStatus('📤 録画をサーバーに保存中...');
+
         const fd=new FormData();
         fd.append('file',blob,fname);
         fd.append('streamId',sid);
-        try{
-          const r=await fetch(`/api/upload-recording?streamId=${encodeURIComponent(sid)}`,{
-            method:'POST',
-            headers:{Authorization:'Bearer '+AT},
-            body:fd,
-          });
-          if(r.ok){
-            const d=await r.json();
-            setStatus('✅ 録画をアーカイブに保存しました');
-            console.log('✅ 自動アップロード完了:', d.url);
-            resolve(d.url);
-          }else{
-            setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
-            resolve(null);
-          }
-        }catch(e){
-          setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
-          console.warn('自動アップロード失敗:', e.message);
-          resolve(null);
-        }
+
+        // XHRで進捗取得
+        const url = await new Promise(res2=>{
+          const xhr=new XMLHttpRequest();
+          xhr.open('POST',`/api/upload-recording?streamId=${encodeURIComponent(sid)}`);
+          xhr.setRequestHeader('Authorization','Bearer '+AT);
+          xhr.upload.onprogress=e=>{
+            if(e.lengthComputable) updateUploadOverlay(Math.round(e.loaded/e.total*100));
+          };
+          xhr.onload=()=>{
+            hideUploadOverlay();
+            if(xhr.status===200){
+              try{ res2(JSON.parse(xhr.responseText).url); }catch{ res2(null); }
+            } else {
+              setStatus('❌ アップロード失敗 ('+xhr.status+') — 手動アップロードで再試行できます');
+              // 失敗時はファイルをダウンロードして手動アップロードできるようにする
+              offerManualUpload(blob, fname);
+              res2(null);
+            }
+          };
+          xhr.onerror=()=>{
+            hideUploadOverlay();
+            setStatus('❌ ネットワークエラー — 手動アップロードで再試行できます');
+            offerManualUpload(blob, fname);
+            res2(null);
+          };
+          xhr.send(fd);
+        });
+
+        if(url) setStatus('✅ 録画をアーカイブに保存しました');
+        resolve(url);
       }catch(e){
+        hideUploadOverlay();
         console.warn('録画エラー:', e.message);
+        if(blob) offerManualUpload(blob, `push_rec_fallback_${Date.now()}.webm`);
         resolve(null);
       }finally{
         recChunks=[];
@@ -2279,6 +2289,44 @@ async function stopRecording(){
     };
     mediaRecorder.stop();
   });
+}
+
+// ── アップロード進捗オーバーレイ ──
+function showUploadOverlay(fileSize){
+  let ov=ge('upload-progress-overlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='upload-progress-overlay';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+    ov.innerHTML=`
+      <div style="font-size:32px;">📤</div>
+      <div style="color:#fff;font-size:16px;font-weight:700;font-family:sans-serif;">録画をサーバーに保存中...</div>
+      <div style="color:rgba(255,255,255,.5);font-size:13px;font-family:sans-serif;">${Math.round(fileSize/1024)}KB</div>
+      <div style="width:240px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;">
+        <div id="upo-bar" style="height:100%;background:linear-gradient(90deg,#FF6A20,#E040FB);width:0%;transition:width .3s;border-radius:4px;"></div>
+      </div>
+      <div id="upo-pct" style="color:rgba(255,255,255,.6);font-size:13px;font-family:sans-serif;">0%</div>
+    `;
+    document.body.appendChild(ov);
+  }
+  ov.style.display='flex';
+}
+function updateUploadOverlay(pct){
+  const bar=ge('upo-bar'), txt=ge('upo-pct');
+  if(bar) bar.style.width=pct+'%';
+  if(txt) txt.textContent=pct+'%';
+}
+function hideUploadOverlay(){
+  const ov=ge('upload-progress-overlay');
+  if(ov) ov.style.display='none';
+}
+
+// ── 失敗時：ファイルをダウンロード提供 ──
+function offerManualUpload(blob, fname){
+  const objUrl=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=objUrl; a.download=fname; a.click();
+  setTimeout(()=>URL.revokeObjectURL(objUrl),10000);
 }
 async function fetchMpArchives(){
   if(!AT)return;
@@ -2396,24 +2444,14 @@ async function exitLive(){
   await Promise.all([fetchStreams(),fetchInsights()]);
   if(role==='streamer'){
     showPage('mypage');
-    // ★ タイムラプスタブを開いて、直前の配信を自動選択
     setTimeout(async ()=>{
       switchMpTab('timelapse');
-      // アーカイブ一覧を取得して直前の配信をドロップダウンに自動セット
       await populateArchiveSel();
-      const sel = ge('upload-archive-sel');
-      if (sel && sel.options.length > 1) {
-        // 一番上（最新）のアーカイブをデフォルト選択
-        sel.selectedIndex = 1;
-      }
-      // ★ アップロードエリアを目立つようにフラッシュ
-      const uploadCard = ge('upload-rec-card');
-      if (uploadCard) {
-        uploadCard.style.transition = 'box-shadow .4s';
-        uploadCard.style.boxShadow = '0 0 0 2px #E040FB, 0 0 24px rgba(224,64,251,.5)';
-        setTimeout(()=>{ uploadCard.style.boxShadow=''; }, 3000);
-      }
-    }, 400);
+      const sel=ge('upload-archive-sel');
+      if(sel&&sel.options.length>1) sel.selectedIndex=1;
+      const card=ge('upload-rec-card');
+      if(card){ card.style.transition='box-shadow .4s'; card.style.boxShadow='0 0 0 2px #E040FB,0 0 24px rgba(224,64,251,.5)'; setTimeout(()=>{card.style.boxShadow='';},3000); }
+    },400);
   }else{
     showPage('home');
   }
@@ -2727,9 +2765,8 @@ function msInit(){
 function msSend(){
   const inp=ge('ms-inp');
   if(!inp||!inp.value.trim())return;
-  const text=inp.value.trim();
-  const myName=CU?.name||'自分';
-  msFlowComment(myName, text, 'normal');
+  const text=inp.value.trim(),myName=CU?.name||'自分';
+  msFlowComment(myName,text,'normal');
   _msPendingSelf.add(myName+'|'+text);
   socket.emit('chat_message',{streamId:currentStreamId,text,token:AT});
   inp.value='';
@@ -2875,9 +2912,7 @@ function addFloatingComment(text, user) {
 const _origChatBoth = chatBoth;
 function chatBoth(user, text, type) {
   _origChatBoth(user, text, type);
-  if (type !== 'sys' && isMobile()) {
-    addFloatingComment(text, user === 'SYSTEM' ? null : user);
-  }
+  if (type !== 'sys' && isMobile()) addFloatingComment(text, user === 'SYSTEM' ? null : user);
   if (isMobile()) {
     const mc = ge('mobile-chat-msgs');
     if (mc) {
@@ -3044,30 +3079,23 @@ function addMsg(side,user,text,type,color){
 }
 function addMsgBoth(u,t,type,color){addMsg('s',u,t,type,color);addMsg('v',u,t,type,color);}
 function chatBoth(u,t,type){addMsg('s',u,t,type);addMsg('v',u,t,type);}
-
-// ★ 配信者スマホ：コメント流す共通関数
-function msFlowComment(user, text, type) {
-  if (!isMobile() || G.role !== 'streamer') return;
-  const flow = ge('ms-comment-flow');
-  if (flow) {
-    const el = document.createElement('div');
-    el.className = 'ms-fcmt';
-    if (type === 'sys') { el.style.color = 'rgba(255,160,80,.9)'; el.textContent = text; }
-    else { el.innerHTML = `<span style="font-weight:700;color:rgba(255,200,100,.95);">${esc(user)}</span> ${esc(text)}`; }
-    flow.prepend(el);
-    while (flow.children.length > 8) flow.lastChild.remove();
-    setTimeout(() => el.remove(), 6200);
-  }
-  if (type !== 'sys') { const c=ge('ms-cmts'); if(c) c.textContent=(parseInt(c.textContent||'0')+1); }
-  if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx===1) msDrRender();
+function msFlowComment(user,text,type){
+  if(!isMobile()||G.role!=='streamer')return;
+  const flow=ge('ms-comment-flow');
+  if(flow){const el=document.createElement('div');el.className='ms-fcmt';
+    if(type==='sys'){el.style.color='rgba(255,160,80,.9)';el.textContent=text;}
+    else{el.innerHTML=`<span style="font-weight:700;color:rgba(255,200,100,.95);">${esc(user)}</span> ${esc(text)}`;}
+    flow.prepend(el);while(flow.children.length>8)flow.lastChild.remove();setTimeout(()=>el.remove(),6200);}
+  if(type!=='sys'){const c=ge('ms-cmts');if(c)c.textContent=(parseInt(c.textContent||'0')+1);}
+  if(ge('ms-drawer')?.classList.contains('on')&&msDrTabIdx===1)msDrRender();
 }
-const _msPendingSelf = new Set();
-const _origAddMsgBoth = addMsgBoth;
-function addMsgBoth(u, t, type, color) {
-  _origAddMsgBoth(u, t, type, color);
+const _msPendingSelf=new Set();
+const _origAddMsgBoth=addMsgBoth;
+function addMsgBoth(u,t,type,color){
+  _origAddMsgBoth(u,t,type,color);
   const key=(u||'')+'|'+(t||'');
-  if (_msPendingSelf.has(key)) { _msPendingSelf.delete(key); return; }
-  msFlowComment(u, t, type);
+  if(_msPendingSelf.has(key)){_msPendingSelf.delete(key);return;}
+  msFlowComment(u,t,type);
 }
 function sendMsg(side){
   const inp=ge('inp-'+side),text=inp.value.trim();if(!text)return;
