@@ -1524,17 +1524,24 @@ async function doLogin(){
   const errEl=ge('login-err'), btn=ge('login-btn');
   if(!email||!pass){errEl.textContent='メールとパスワードを入力してください';return;}
   btn.disabled=true; btn.textContent='ログイン中...';
+  errEl.textContent='';
   try{
     const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const d=await res.json();
-    if(!res.ok){errEl.textContent=d.error||'エラー';btn.disabled=false;btn.textContent='ログイン';return;}
+    if(!res.ok){
+      errEl.textContent=d.error||'ログインエラー（'+res.status+'）';
+      btn.disabled=false; btn.textContent='ログイン';
+      return;
+    }
     AT=d.token;
     localStorage.setItem('push_token',AT);
     localStorage.setItem('push_email',email);
     localStorage.setItem('push_pass',pass);
     await onLogin(d.user);
-  }catch(e){errEl.textContent='サーバーに接続できません';}
-  btn.disabled=false; btn.textContent='ログイン';
+  }catch(e){
+    errEl.textContent='サーバーエラー: '+e.message;
+    btn.disabled=false; btn.textContent='ログイン';
+  }
 }
 
 async function doSignup(){
