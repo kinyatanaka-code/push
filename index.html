@@ -976,7 +976,7 @@ body>*{position:relative;z-index:1;}
         <!-- タイムラプスタブ -->
         <div id="mp-timelapse" style="display:none;">
           <!-- ★ 手動アップロードエリア -->
-          <div class="dash-card" style="margin-bottom:16px;">
+          <div class="dash-card" id="upload-rec-card" style="margin-bottom:16px;transition:box-shadow .4s;">
             <div class="dash-card-title">📤 録画をアップロード</div>
             <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信終了時にダウンロードされた録画ファイルをアップロードするとアーカイブで再生できます</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2108,7 +2108,6 @@ async function uploadRecording(){
 
     if(r.ok){
       if(progBar) progBar.style.width='100%';
-      alert('✅ 録画をアーカイブに保存しました！アーカイブタブで確認できます。');
       if(progText) progText.textContent='✅ アップロード完了！';
       if(btn) btn.disabled=false;
       setTimeout(()=>{
@@ -2119,7 +2118,9 @@ async function uploadRecording(){
         fetchMpTimelapse();
         fetchMpArchives();
         populateArchiveSel();
-      },1500);
+        // ★ アーカイブタブへ自動移動して動画を確認できるようにする
+        switchMpTab('archive');
+      },1000);
     }else{
       alert('アップロードに失敗しました');
       if(btn) btn.disabled=false;
@@ -2248,7 +2249,6 @@ async function stopRecording(){
         fd.append('file',blob,fname);
         fd.append('streamId',sid);
         try{
-          // ★ streamIdをクエリ文字列に付ける（サーバーはreq.query.streamIdを読む）
           const r=await fetch(`/api/upload-recording?streamId=${encodeURIComponent(sid)}`,{
             method:'POST',
             headers:{Authorization:'Bearer '+AT},
@@ -2260,9 +2260,7 @@ async function stopRecording(){
             console.log('✅ 自動アップロード完了:', d.url);
             resolve(d.url);
           }else{
-            const errText = await r.text().catch(()=>'');
-            setStatus('❌ アップロード失敗: '+r.status);
-            console.warn('自動アップロード失敗:', r.status, errText);
+            setStatus('💾 録画をダウンロードしました（手動アップロードも可）');
             resolve(null);
           }
         }catch(e){
@@ -2398,7 +2396,24 @@ async function exitLive(){
   await Promise.all([fetchStreams(),fetchInsights()]);
   if(role==='streamer'){
     showPage('mypage');
-    setTimeout(()=>switchMpTab('archive'),400);
+    // ★ タイムラプスタブを開いて、直前の配信を自動選択
+    setTimeout(async ()=>{
+      switchMpTab('timelapse');
+      // アーカイブ一覧を取得して直前の配信をドロップダウンに自動セット
+      await populateArchiveSel();
+      const sel = ge('upload-archive-sel');
+      if (sel && sel.options.length > 1) {
+        // 一番上（最新）のアーカイブをデフォルト選択
+        sel.selectedIndex = 1;
+      }
+      // ★ アップロードエリアを目立つようにフラッシュ
+      const uploadCard = ge('upload-rec-card');
+      if (uploadCard) {
+        uploadCard.style.transition = 'box-shadow .4s';
+        uploadCard.style.boxShadow = '0 0 0 2px #E040FB, 0 0 24px rgba(224,64,251,.5)';
+        setTimeout(()=>{ uploadCard.style.boxShadow=''; }, 3000);
+      }
+    }, 400);
   }else{
     showPage('home');
   }
@@ -2874,7 +2889,6 @@ function chatBoth(user, text, type) {
       mc.scrollTop = mc.scrollHeight;
     }
   }
-  // ★ 配信者スマホにも流す（システムメッセージ含む）
   msFlowComment(user, text, type);
 }
 
@@ -3031,36 +3045,27 @@ function addMsg(side,user,text,type,color){
 function addMsgBoth(u,t,type,color){addMsg('s',u,t,type,color);addMsg('v',u,t,type,color);}
 function chatBoth(u,t,type){addMsg('s',u,t,type);addMsg('v',u,t,type);}
 
-// ★ 配信者スマホ：コメントを流す共通関数
+// ★ 配信者スマホ：コメント流す共通関数
 function msFlowComment(user, text, type) {
   if (!isMobile() || G.role !== 'streamer') return;
   const flow = ge('ms-comment-flow');
   if (flow) {
     const el = document.createElement('div');
     el.className = 'ms-fcmt';
-    if (type === 'sys') {
-      el.style.color = 'rgba(255,160,80,.9)';
-      el.textContent = text;
-    } else {
-      el.innerHTML = `<span style="font-weight:700;color:rgba(255,200,100,.95);">${esc(user)}</span> ${esc(text)}`;
-    }
+    if (type === 'sys') { el.style.color = 'rgba(255,160,80,.9)'; el.textContent = text; }
+    else { el.innerHTML = `<span style="font-weight:700;color:rgba(255,200,100,.95);">${esc(user)}</span> ${esc(text)}`; }
     flow.prepend(el);
     while (flow.children.length > 8) flow.lastChild.remove();
     setTimeout(() => el.remove(), 6200);
   }
-  if (type !== 'sys') {
-    const cnt = ge('ms-cmts');
-    if (cnt) cnt.textContent = (parseInt(cnt.textContent || '0') + 1);
-  }
-  if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx === 1) msDrRender();
+  if (type !== 'sys') { const c=ge('ms-cmts'); if(c) c.textContent=(parseInt(c.textContent||'0')+1); }
+  if (ge('ms-drawer')?.classList.contains('on') && msDrTabIdx===1) msDrRender();
 }
-
-// ★ addMsgBoth を上書き（ソケット受信 → 配信者スマホに流す）
 const _msPendingSelf = new Set();
 const _origAddMsgBoth = addMsgBoth;
 function addMsgBoth(u, t, type, color) {
   _origAddMsgBoth(u, t, type, color);
-  const key = (u||'') + '|' + (t||'');
+  const key=(u||'')+'|'+(t||'');
   if (_msPendingSelf.has(key)) { _msPendingSelf.delete(key); return; }
   msFlowComment(u, t, type);
 }
