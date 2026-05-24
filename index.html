@@ -2042,19 +2042,17 @@ async function uploadRecording(){
     if(progBar) progBar.style.width='90%';
 
     if(r.ok){
-    if(r.ok){
       if(progBar) progBar.style.width='100%';
       alert('✅ 録画をアーカイブに保存しました！アーカイブタブで確認できます。');
       if(progText) progText.textContent='✅ アップロード完了！';
       if(btn) btn.disabled=false;
-      // リセット
       setTimeout(()=>{
         if(prog) prog.style.display='none';
         if(progBar) progBar.style.width='0%';
         const prev=ge('upload-preview');if(prev)prev.style.display='none';
         const inp=ge('upload-rec-file');if(inp)inp.value='';
         fetchMpTimelapse();
-        fetchMpArchives(); // ★ アーカイブも更新
+        fetchMpArchives();
         populateArchiveSel();
       },1500);
     }else{
