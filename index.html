@@ -308,6 +308,8 @@ body>*{position:relative;z-index:1;}
 
 /* ── 配信ヘッダー（ダーク） ── */
 .sh{display:flex;align-items:center;padding:7px 12px;border-bottom:1px solid rgba(180,130,255,.1);gap:9px;flex-shrink:0;background:rgba(15,10,35,.95);box-shadow:0 2px 12px rgba(0,0,0,.3);}
+/* PCの配信者画面では.sh（上部バー）は不要 */
+#sc-s .sh{display:none!important;}
 .ava{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FF6A20,#FFD700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0;box-shadow:0 0 10px rgba(255,160,0,.3);}
 .sname{font-size:12px;font-weight:700;color:#E8E0FF;}
 .sgoal{font-size:11px;color:rgba(180,150,255,.55);margin-top:1px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -656,7 +658,7 @@ body>*{position:relative;z-index:1;}
 @media(max-width:768px){
   /* PC要素を完全非表示 */
   #sc-s .sh{display:none!important;}
-  #sc-s #sside-s{display:none!important;}
+  /* PCでもsc-sの.shは不要 */  #sc-s #sside-s{display:none!important;}
   #sc-s .giftbar{display:none!important;}
   #sc-s .rpg-overlay{display:none!important;}
   #sc-s .stream-stats-overlay{display:none!important;}
@@ -970,15 +972,10 @@ body>*{position:relative;z-index:1;}
         </div>
         <!-- アーカイブタブ -->
         <div id="mp-archive" style="display:none;">
-          <div class="card-grid" id="mp-arch-grid"></div>
-          <div class="empty-state" id="mp-arch-empty" style="display:none;"><div class="empty-icon">📼</div><div class="empty-text">アーカイブはまだありません</div></div>
-        </div>
-        <!-- タイムラプスタブ -->
-        <div id="mp-timelapse" style="display:none;">
-          <!-- ★ 手動アップロードエリア -->
+          <!-- ★ 録画アップロードエリア（アーカイブタブに移動） -->
           <div class="dash-card" id="upload-rec-card" style="margin-bottom:16px;transition:box-shadow .4s;">
-            <div class="dash-card-title">📤 録画をアップロード</div>
-            <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信終了時にダウンロードされた録画ファイルをアップロードするとアーカイブで再生できます</div>
+            <div class="dash-card-title">📤 録画をアーカイブに保存</div>
+            <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信の録画ファイルをアーカイブに紐付けて保存できます</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <select id="upload-archive-sel" style="flex:1;min-width:160px;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:8px 10px;color:#F0EEFF;font-size:12px;font-family:'Noto Sans JP',sans-serif;">
                 <option value="">紐付けるアーカイブを選択...</option>
@@ -1000,9 +997,14 @@ body>*{position:relative;z-index:1;}
               <div id="upload-prog-text" style="font-size:11px;color:rgba(180,150,255,.5);margin-top:4px;text-align:center;">アップロード中...</div>
             </div>
           </div>
-          <div style="font-size:12px;color:rgba(180,150,255,.4);margin-bottom:12px;">アーカイブ一覧（録画あり）</div>
+          <div class="card-grid" id="mp-arch-grid"></div>
+          <div class="empty-state" id="mp-arch-empty" style="display:none;"><div class="empty-icon">📼</div><div class="empty-text">アーカイブはまだありません</div></div>
+        </div>
+        <!-- タイムラプスタブ（一般公開するもの） -->
+        <div id="mp-timelapse" style="display:none;">
+          <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:14px;">アーカイブからタイムラプスとして投稿した動画が表示されます。一般に公開されます。</div>
           <div class="card-grid" id="mp-tl-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));"></div>
-          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">配信終了後に録画をアップロードしてください</span></div></div>
+          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">アーカイブから「タイムラプス投稿」を押してください</span></div></div>
         </div>
         <!-- インサイトタブ -->
         <div id="mp-insight" style="display:none;">
@@ -2047,8 +2049,8 @@ function switchMpTab(tab){
     ge('mp-'+t).style.display=(t===tab)?'':'none';
     ge('mp-tab-'+t).classList.toggle('on',t===tab);
   });
-  if(tab==='archive')fetchMpArchives();
-  if(tab==='timelapse'){fetchMpTimelapse();populateArchiveSel();}
+  if(tab==='archive'){fetchMpArchives();populateArchiveSel();}
+  if(tab==='timelapse'){fetchMpTimelapse();}
   if(tab==='insight')fetchInsights();
 }
 
@@ -2119,6 +2121,7 @@ async function uploadRecording(){
         fetchMpTimelapse();
         fetchMpArchives();
         populateArchiveSel();
+        switchMpTab('archive');
       },1500);
     }else{
       alert('アップロードに失敗しました');
@@ -2138,30 +2141,31 @@ async function fetchMpTimelapse(){
   try{
     const r=await fetch('/api/archives/mine',{headers:{Authorization:'Bearer '+AT}});
     const d=await r.json();
-    const list=d.archives||[];
+    const all=d.archives||[];
+    // タイムラプスとして投稿済みのもののみ表示
+    const list=all.filter(a=>a.isTimelapse||a.is_timelapse);
     const grid=ge('mp-tl-grid'), em=ge('mp-tl-empty');
     if(!list.length){if(grid)grid.innerHTML='';if(em)em.style.display='';return;}
     if(em)em.style.display='none';
-    // mpArchListとは別に保持
     window.mpTlList=list;
     if(grid)grid.innerHTML=list.map((a,i)=>{
       const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
-      const ava=a.streamerName?a.streamerName[0]:'?';
       const achieved=(a.achievePct||a.achieve_pct||0)>=70;
       const dur=Math.floor((a.durationSec||a.duration_sec||0)/60);
       const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
       const hasRec=!!(a.recordingUrl||a.recording_url);
-      return`<div class="tlcard" onclick="openArchModal(window.mpTlList[${i}])">
-        <div class="tlcard-thumb">
+      return`<div class="tlcard">
+        <div class="tlcard-thumb" style="cursor:pointer;" onclick="openArchModal(window.mpTlList[${i}])">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(${achieved?'0,200,83':'180,80,255'},.1),transparent);"></div>
           <div style="font-size:40px;filter:drop-shadow(0 4px 16px rgba(255,150,0,.4));z-index:1;">${a.emoji||'🎯'}</div>
           <div class="tlcard-play">${hasRec?'▶':'📊'}</div>
-          <div class="tlcard-dur">${hasRec?'30秒':'統計'}</div>
+          <div class="tlcard-dur">${dur}分</div>
           ${achieved?'<div style="position:absolute;top:6px;left:6px;background:linear-gradient(90deg,rgba(0,200,83,.85),rgba(0,230,118,.7));color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:\'Space Mono\',monospace;z-index:2;">✅ 達成</div>':''}
         </div>
         <div class="tlcard-body">
           <div class="tlcard-title">${esc(a.title)}</div>
-          <div class="tlcard-meta"><span>${date}</span><span>${dur}分</span><span style="margin-left:auto;color:#FFD700;">${ach}</span></div>
+          <div class="tlcard-meta"><span>${date}</span><span style="margin-left:auto;color:#FFD700;">${ach}</span></div>
+          <button onclick="unpostTimelapse('${a.id}',event)" style="margin-top:6px;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);color:rgba(200,180,255,.6);border-radius:6px;padding:4px 0;font-size:10px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">📼 アーカイブに戻す</button>
         </div></div>`;
     }).join('');
   }catch(e){}
@@ -2238,96 +2242,84 @@ async function stopRecording(){
         const fname=`push_rec_${sid}_${Date.now()}.${ext}`;
 
         // ★ サーバーに直接アップロード（ダウンロードなし）
-        // 進捗オーバーレイを表示
         showUploadOverlay(blob.size);
         setStatus('📤 録画をサーバーに保存中...');
-
         const fd=new FormData();
         fd.append('file',blob,fname);
         fd.append('streamId',sid);
-
-        // XHRで進捗取得
-        const url = await new Promise(res2=>{
+        const url=await new Promise(res2=>{
           const xhr=new XMLHttpRequest();
           xhr.open('POST',`/api/upload-recording?streamId=${encodeURIComponent(sid)}`);
           xhr.setRequestHeader('Authorization','Bearer '+AT);
-          xhr.upload.onprogress=e=>{
-            if(e.lengthComputable) updateUploadOverlay(Math.round(e.loaded/e.total*100));
-          };
+          xhr.upload.onprogress=e=>{ if(e.lengthComputable) updateUploadOverlay(Math.round(e.loaded/e.total*100)); };
           xhr.onload=()=>{
             hideUploadOverlay();
-            if(xhr.status===200){
-              try{ res2(JSON.parse(xhr.responseText).url); }catch{ res2(null); }
-            } else {
-              setStatus('❌ アップロード失敗 ('+xhr.status+') — 手動アップロードで再試行できます');
-              // 失敗時はファイルをダウンロードして手動アップロードできるようにする
-              offerManualUpload(blob, fname);
-              res2(null);
-            }
+            if(xhr.status===200){ try{res2(JSON.parse(xhr.responseText).url);}catch{res2(null);} }
+            else{ setStatus('❌ アップロード失敗('+xhr.status+') — アーカイブタブから手動でアップロードできます'); offerManualUpload(blob,fname); res2(null); }
           };
-          xhr.onerror=()=>{
-            hideUploadOverlay();
-            setStatus('❌ ネットワークエラー — 手動アップロードで再試行できます');
-            offerManualUpload(blob, fname);
-            res2(null);
-          };
+          xhr.onerror=()=>{ hideUploadOverlay(); setStatus('❌ ネットワークエラー'); offerManualUpload(blob,fname); res2(null); };
           xhr.send(fd);
         });
-
         if(url) setStatus('✅ 録画をアーカイブに保存しました');
         resolve(url);
-      }catch(e){
-        hideUploadOverlay();
-        console.warn('録画エラー:', e.message);
-        if(blob) offerManualUpload(blob, `push_rec_fallback_${Date.now()}.webm`);
-        resolve(null);
-      }finally{
-        recChunks=[];
-        mediaRecorder=null;
-        recStreamId=null;
-      }
+      }catch(e){ hideUploadOverlay(); if(blob) offerManualUpload(blob,`push_rec_fallback_${Date.now()}.webm`); resolve(null); }
+      finally{ recChunks=[]; mediaRecorder=null; recStreamId=null; }
     };
     mediaRecorder.stop();
   });
 }
-
-// ── アップロード進捗オーバーレイ ──
-function showUploadOverlay(fileSize){
+function showUploadOverlay(sz){
   let ov=ge('upload-progress-overlay');
-  if(!ov){
-    ov=document.createElement('div');
-    ov.id='upload-progress-overlay';
-    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
-    ov.innerHTML=`
-      <div style="font-size:32px;">📤</div>
-      <div style="color:#fff;font-size:16px;font-weight:700;font-family:sans-serif;">録画をサーバーに保存中...</div>
-      <div style="color:rgba(255,255,255,.5);font-size:13px;font-family:sans-serif;">${Math.round(fileSize/1024)}KB</div>
-      <div style="width:240px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;">
-        <div id="upo-bar" style="height:100%;background:linear-gradient(90deg,#FF6A20,#E040FB);width:0%;transition:width .3s;border-radius:4px;"></div>
-      </div>
-      <div id="upo-pct" style="color:rgba(255,255,255,.6);font-size:13px;font-family:sans-serif;">0%</div>
-    `;
-    document.body.appendChild(ov);
-  }
+  if(!ov){ov=document.createElement('div');ov.id='upload-progress-overlay';ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+  ov.innerHTML=`<div style="font-size:32px;">📤</div><div style="color:#fff;font-size:16px;font-weight:700;font-family:sans-serif;">録画をサーバーに保存中...</div><div style="color:rgba(255,255,255,.5);font-size:13px;font-family:sans-serif;">${Math.round(sz/1024)}KB</div><div style="width:240px;height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;"><div id="upo-bar" style="height:100%;background:linear-gradient(90deg,#FF6A20,#E040FB);width:0%;transition:width .3s;border-radius:4px;"></div></div><div id="upo-pct" style="color:rgba(255,255,255,.6);font-size:13px;font-family:sans-serif;">0%</div>`;
+  document.body.appendChild(ov);}
   ov.style.display='flex';
 }
-function updateUploadOverlay(pct){
-  const bar=ge('upo-bar'), txt=ge('upo-pct');
-  if(bar) bar.style.width=pct+'%';
-  if(txt) txt.textContent=pct+'%';
-}
-function hideUploadOverlay(){
-  const ov=ge('upload-progress-overlay');
-  if(ov) ov.style.display='none';
+function updateUploadOverlay(p){const b=ge('upo-bar'),t=ge('upo-pct');if(b)b.style.width=p+'%';if(t)t.textContent=p+'%';}
+function hideUploadOverlay(){const ov=ge('upload-progress-overlay');if(ov)ov.style.display='none';}
+function offerManualUpload(blob,fname){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(u),10000);}
+
+// ★ アーカイブ削除
+async function deleteArchive(archiveId, e){
+  if(e) e.stopPropagation();
+  if(!confirm('このアーカイブと録画ログを削除しますか？\nこの操作は取り消せません。')) return;
+  try{
+    const r=await fetch(`/api/archives/${archiveId}`,{method:'DELETE',headers:{Authorization:'Bearer '+AT}});
+    if(r.ok){ fetchMpArchives(); }
+    else{ alert('削除に失敗しました'); }
+  }catch(e){ alert('エラー: '+e.message); }
 }
 
-// ── 失敗時：ファイルをダウンロード提供 ──
-function offerManualUpload(blob, fname){
-  const objUrl=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=objUrl; a.download=fname; a.click();
-  setTimeout(()=>URL.revokeObjectURL(objUrl),10000);
+// ★ タイムラプスとして投稿
+async function postAsTimelapse(archiveId){
+  if(!confirm('このアーカイブをタイムラプスとして一般公開しますか？')) return;
+  try{
+    const r=await fetch(`/api/archives/${archiveId}/timelapse`,{method:'POST',headers:{Authorization:'Bearer '+AT}});
+    if(r.ok){
+      // アーカイブタブとタイムラプスタブの両方を更新
+      fetchMpArchives();
+      fetchMpTimelapse();
+      // 完了トースト
+      const ok=document.createElement('div');
+      ok.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,200,100,.9);border-radius:10px;padding:8px 18px;font-size:13px;color:#fff;font-weight:700;z-index:9999;font-family:\'Noto Sans JP\',sans-serif;';
+      ok.textContent='⚡ タイムラプスに投稿しました！';
+      document.body.appendChild(ok);
+      setTimeout(()=>ok.remove(),3000);
+    } else { alert('投稿に失敗しました'); }
+  }catch(e){ alert('エラー: '+e.message); }
 }
+
+// ★ タイムラプスからアーカイブに戻す（公開取り消し）
+async function unpostTimelapse(archiveId, e){
+  if(e) e.stopPropagation();
+  if(!confirm('タイムラプスの公開を取り消してアーカイブに戻しますか？')) return;
+  try{
+    const r=await fetch(`/api/archives/${archiveId}/timelapse`,{method:'DELETE',headers:{Authorization:'Bearer '+AT}});
+    if(r.ok){ fetchMpArchives(); fetchMpTimelapse(); }
+    else { alert('取り消しに失敗しました'); }
+  }catch(e){ alert('エラー: '+e.message); }
+}
+
 async function fetchMpArchives(){
   if(!AT)return;
   try{
@@ -2342,7 +2334,27 @@ async function fetchMpArchives(){
       const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
       const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
       const hasRec=!!(a.recordingUrl||a.recording_url);
-      return`<div class="scard rarity-n" onclick="openArchModal(window.mpArchList[${i}])" style="cursor:pointer;"><div class="scard-thumb cat-${a.category||'その他'}"><div class="scard-emoji">${a.emoji||'🎯'}</div><div class="wbtn"><span>${hasRec?'▶ 動画を見る':'📊 詳細を見る'}</span></div><div class="scard-arch-badge">${hasRec?'🎬 録画あり':'📼 '+date}</div><div class="scard-viewers">⏱ ${dur}</div></div><div class="scard-body"><div class="scard-title">${esc(a.title)}</div><div class="scard-bot" style="margin-top:6px;"><div class="scard-cat">${a.category}</div><div class="scard-gift">🏆 ${ach}</div></div></div></div>`;
+      const isTimelapse=!!(a.isTimelapse||a.is_timelapse);
+      return`<div class="scard rarity-n" style="cursor:default;">
+        <div class="scard-thumb cat-${a.category||'その他'}" style="cursor:pointer;" onclick="openArchModal(window.mpArchList[${i}])">
+          <div class="scard-emoji">${a.emoji||'🎯'}</div>
+          <div class="wbtn"><span>${hasRec?'▶ 動画を見る':'📊 詳細を見る'}</span></div>
+          <div class="scard-arch-badge">${hasRec?'🎬 録画あり':'📼 '+date}</div>
+          <div class="scard-viewers">⏱ ${dur}</div>
+        </div>
+        <div class="scard-body">
+          <div class="scard-title">${esc(a.title)}</div>
+          <div class="scard-bot" style="margin-top:6px;">
+            <div class="scard-cat">${a.category}</div>
+            <div class="scard-gift">🏆 ${ach}</div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+            ${hasRec&&!isTimelapse?`<button onclick="postAsTimelapse('${a.id}')" style="flex:1;background:linear-gradient(135deg,rgba(224,64,251,.2),rgba(123,31,162,.3));border:1px solid rgba(224,64,251,.4);color:#E040FB;border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">⚡ タイムラプス投稿</button>`:''}
+            ${isTimelapse?`<span style="flex:1;text-align:center;font-size:10px;color:rgba(224,64,251,.7);padding:5px 4px;">✅ 公開中</span>`:''}
+            <button onclick="deleteArchive('${a.id}',event)" style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.2);color:rgba(255,100,100,.8);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">🗑 削除</button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
     window.mpArchList=list;
   }catch(e){}
@@ -2445,7 +2457,7 @@ async function exitLive(){
   if(role==='streamer'){
     showPage('mypage');
     setTimeout(async ()=>{
-      switchMpTab('timelapse');
+      switchMpTab('archive');
       await populateArchiveSel();
       const sel=ge('upload-archive-sel');
       if(sel&&sel.options.length>1) sel.selectedIndex=1;
