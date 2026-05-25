@@ -367,6 +367,20 @@ app.get('/api/archives', async (_q, res) => {
   } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
 });
 
+// ── 公開タイムラプス（is_timelapse=true のみ） ──
+app.get('/api/timelapse', async (_q, res) => {
+  try {
+    if (db) {
+      const r = await db.query('SELECT * FROM archives WHERE is_timelapse=TRUE ORDER BY ended_at DESC LIMIT 100');
+      return res.json({ archives: r.rows });
+    }
+    const list = Array.from(archiveMap.values())
+      .filter(a => a.isTimelapse)
+      .sort((a,b) => new Date(b.endedAt) - new Date(a.endedAt));
+    res.json({ archives: list });
+  } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
+});
+
 // ── 自分のアーカイブ ──
 app.get('/api/archives/mine', async (req, res) => {
   try {
@@ -432,7 +446,7 @@ app.post('/api/archives/:id/timelapse', async (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── タイムラプス取り消し（アーカイブに戻す） ──
+// ── タイムラプス取り消し ──
 app.delete('/api/archives/:id/timelapse', async (req, res) => {
   try {
     const tok = (req.headers.authorization||'').replace('Bearer ','');
