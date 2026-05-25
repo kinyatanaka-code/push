@@ -94,7 +94,6 @@ async function initDB() {
         is_timelapse BOOLEAN DEFAULT FALSE,
         started_at TIMESTAMPTZ, ended_at TIMESTAMPTZ DEFAULT NOW()
       );
-      -- 既存DBへの追加（すでにあればエラーを無視）
       ALTER TABLE archives ADD COLUMN IF NOT EXISTS is_timelapse BOOLEAN DEFAULT FALSE;
     `);
     console.log('✅ PostgreSQL 接続完了');
@@ -388,48 +387,35 @@ app.get('/api/archives/mine', async (req, res) => {
 app.delete('/api/archives/:id', async (req, res) => {
   try {
     const tok = (req.headers.authorization||'').replace('Bearer ','');
-    const s   = sessions.get(tok);
+    const s = sessions.get(tok);
     if (!s) return res.status(401).json({ error: '未ログイン' });
     const { id } = req.params;
-
     if (db) {
-      // 本人確認してから削除
       const check = await db.query('SELECT streamer_id, recording_url FROM archives WHERE id=$1', [id]);
       if (!check.rows.length) return res.status(404).json({ error: 'Not found' });
       if (check.rows[0].streamer_id !== s.userId) return res.status(403).json({ error: '権限なし' });
-      // 録画ファイルも削除
       const recUrl = check.rows[0].recording_url;
-      if (recUrl) {
-        const fname = path.basename(recUrl);
-        const fpath = path.join(REC_DIR, fname);
-        try { if (fs.existsSync(fpath)) fs.unlinkSync(fpath); } catch(e) {}
-      }
+      if (recUrl) { try { const fp=path.join(REC_DIR,path.basename(recUrl)); if(fs.existsSync(fp))fs.unlinkSync(fp); } catch(e){} }
       await db.query('DELETE FROM archives WHERE id=$1', [id]);
     } else {
       const a = archiveMap.get(id);
       if (!a) return res.status(404).json({ error: 'Not found' });
       if (a.streamerId !== s.userId) return res.status(403).json({ error: '権限なし' });
-      if (a.recordingUrl) {
-        const fname = path.basename(a.recordingUrl);
-        const fpath = path.join(REC_DIR, fname);
-        try { if (fs.existsSync(fpath)) fs.unlinkSync(fpath); } catch(e) {}
-      }
-      archiveMap.delete(id);
-      saveArchives();
+      if (a.recordingUrl) { try { const fp=path.join(REC_DIR,path.basename(a.recordingUrl)); if(fs.existsSync(fp))fs.unlinkSync(fp); } catch(e){} }
+      archiveMap.delete(id); saveArchives();
     }
     console.log(`🗑 アーカイブ削除: ${id}`);
     res.json({ ok: true });
-  } catch(e) { console.error('delete archive:', e); res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── タイムラプスとして公開 ──
 app.post('/api/archives/:id/timelapse', async (req, res) => {
   try {
     const tok = (req.headers.authorization||'').replace('Bearer ','');
-    const s   = sessions.get(tok);
+    const s = sessions.get(tok);
     if (!s) return res.status(401).json({ error: '未ログイン' });
     const { id } = req.params;
-
     if (db) {
       const check = await db.query('SELECT streamer_id FROM archives WHERE id=$1', [id]);
       if (!check.rows.length) return res.status(404).json({ error: 'Not found' });
@@ -439,22 +425,20 @@ app.post('/api/archives/:id/timelapse', async (req, res) => {
       const a = archiveMap.get(id);
       if (!a) return res.status(404).json({ error: 'Not found' });
       if (a.streamerId !== s.userId) return res.status(403).json({ error: '権限なし' });
-      a.isTimelapse = true;
-      saveArchives();
+      a.isTimelapse = true; saveArchives();
     }
     console.log(`⚡ タイムラプス公開: ${id}`);
     res.json({ ok: true });
-  } catch(e) { console.error('post timelapse:', e); res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
-// ── タイムラプス公開取り消し（アーカイブに戻す） ──
+// ── タイムラプス取り消し（アーカイブに戻す） ──
 app.delete('/api/archives/:id/timelapse', async (req, res) => {
   try {
     const tok = (req.headers.authorization||'').replace('Bearer ','');
-    const s   = sessions.get(tok);
+    const s = sessions.get(tok);
     if (!s) return res.status(401).json({ error: '未ログイン' });
     const { id } = req.params;
-
     if (db) {
       const check = await db.query('SELECT streamer_id FROM archives WHERE id=$1', [id]);
       if (!check.rows.length) return res.status(404).json({ error: 'Not found' });
@@ -464,12 +448,11 @@ app.delete('/api/archives/:id/timelapse', async (req, res) => {
       const a = archiveMap.get(id);
       if (!a) return res.status(404).json({ error: 'Not found' });
       if (a.streamerId !== s.userId) return res.status(403).json({ error: '権限なし' });
-      a.isTimelapse = false;
-      saveArchives();
+      a.isTimelapse = false; saveArchives();
     }
     console.log(`📼 タイムラプス取り消し: ${id}`);
     res.json({ ok: true });
-  } catch(e) { console.error('delete timelapse:', e); res.status(500).json({ error: e.message }); }
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── インサイト ──
@@ -633,8 +616,7 @@ app.post('/api/upload-recording', async (req, res) => {
         const url = `/recordings/${fname}`;
         console.log(`📹 録画保存: ${fname} (${Math.round(parts[0].data.length/1024)}KB)`);
 
-        // アーカイブにrecordingUrlを更新
-        // streamIdはクエリパラメータを優先、なければファイル名から抽出
+        // アーカイブにrecordingUrlを更新（クエリパラメータのstreamIdを優先）
         const sid = streamId || fname.replace(/^push_rec_/, '').replace(/_\d+\.(webm|mp4)$/, '');
         if (archiveMap.has(sid)) {
           archiveMap.get(sid).recordingUrl = url;
@@ -861,9 +843,10 @@ io.on('connection', socket => {
   // ── チャット ──
   socket.on('chat_message', data => {
     try {
-      const c = clients.get(socket.id);
+      const c = ensureAuth(socket.id, data) || clients.get(socket.id);
+      const userName = c?.name || data.user || '名無し';
       io.to(`s:${data.streamId}`).emit('chat_message',{
-        user:c?.name||data.user, text:data.text, type:data.type||'normal', color:data.color,
+        user: userName, text: data.text, type: data.type||'normal', color: data.color,
       });
     } catch(e) {}
   });
