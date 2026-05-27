@@ -91,8 +91,10 @@ async function initDB() {
         total_pushes BIGINT DEFAULT 0,
         achieve_pct INTEGER, payout INTEGER,
         recording_url TEXT,
+        is_timelapse BOOLEAN DEFAULT FALSE,
         started_at TIMESTAMPTZ, ended_at TIMESTAMPTZ DEFAULT NOW()
       );
+      ALTER TABLE archives ADD COLUMN IF NOT EXISTS is_timelapse BOOLEAN DEFAULT FALSE;
     `);
     console.log('✅ PostgreSQL 接続完了');
   } catch(e) {
@@ -363,6 +365,81 @@ app.get('/api/archives', async (_q, res) => {
     const list = Array.from(archiveMap.values()).sort((a,b)=>new Date(b.endedAt)-new Date(a.endedAt));
     res.json({ archives: list });
   } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
+});
+
+// ── 公開タイムラプス（is_timelapse=trueのみ） ──
+app.get('/api/timelapse', async (_q, res) => {
+  try {
+    if (db) {
+      const r = await db.query('SELECT * FROM archives WHERE is_timelapse=TRUE ORDER BY ended_at DESC LIMIT 100');
+      return res.json({ archives: r.rows });
+    }
+    const list = Array.from(archiveMap.values()).filter(a=>a.isTimelapse).sort((a,b)=>new Date(b.endedAt)-new Date(a.endedAt));
+    res.json({ archives: list });
+  } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
+});
+
+// ── アーカイブ削除 ──
+app.delete('/api/archives/:id', async (req, res) => {
+  try {
+    const tok=(req.headers.authorization||'').replace('Bearer ','');
+    const s=sessions.get(tok);if(!s)return res.status(401).json({error:'未ログイン'});
+    const {id}=req.params;
+    if(db){
+      const check=await db.query('SELECT streamer_id,recording_url FROM archives WHERE id=$1',[id]);
+      if(!check.rows.length)return res.status(404).json({error:'Not found'});
+      if(check.rows[0].streamer_id!==s.userId)return res.status(403).json({error:'権限なし'});
+      const recUrl=check.rows[0].recording_url;
+      if(recUrl){try{const fp=path.join(REC_DIR,path.basename(recUrl));if(fs.existsSync(fp))fs.unlinkSync(fp);}catch(e){}}
+      await db.query('DELETE FROM archives WHERE id=$1',[id]);
+    }else{
+      const a=archiveMap.get(id);if(!a)return res.status(404).json({error:'Not found'});
+      if(a.streamerId!==s.userId)return res.status(403).json({error:'権限なし'});
+      if(a.recordingUrl){try{const fp=path.join(REC_DIR,path.basename(a.recordingUrl));if(fs.existsSync(fp))fs.unlinkSync(fp);}catch(e){}}
+      archiveMap.delete(id);saveArchives();
+    }
+    res.json({ok:true});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
+// ── タイムラプス公開 ──
+app.post('/api/archives/:id/timelapse', async (req, res) => {
+  try {
+    const tok=(req.headers.authorization||'').replace('Bearer ','');
+    const s=sessions.get(tok);if(!s)return res.status(401).json({error:'未ログイン'});
+    const {id}=req.params;
+    if(db){
+      const check=await db.query('SELECT streamer_id FROM archives WHERE id=$1',[id]);
+      if(!check.rows.length)return res.status(404).json({error:'Not found'});
+      if(check.rows[0].streamer_id!==s.userId)return res.status(403).json({error:'権限なし'});
+      await db.query('UPDATE archives SET is_timelapse=TRUE WHERE id=$1',[id]);
+    }else{
+      const a=archiveMap.get(id);if(!a)return res.status(404).json({error:'Not found'});
+      if(a.streamerId!==s.userId)return res.status(403).json({error:'権限なし'});
+      a.isTimelapse=true;saveArchives();
+    }
+    res.json({ok:true});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
+// ── タイムラプス取り消し ──
+app.delete('/api/archives/:id/timelapse', async (req, res) => {
+  try {
+    const tok=(req.headers.authorization||'').replace('Bearer ','');
+    const s=sessions.get(tok);if(!s)return res.status(401).json({error:'未ログイン'});
+    const {id}=req.params;
+    if(db){
+      const check=await db.query('SELECT streamer_id FROM archives WHERE id=$1',[id]);
+      if(!check.rows.length)return res.status(404).json({error:'Not found'});
+      if(check.rows[0].streamer_id!==s.userId)return res.status(403).json({error:'権限なし'});
+      await db.query('UPDATE archives SET is_timelapse=FALSE WHERE id=$1',[id]);
+    }else{
+      const a=archiveMap.get(id);if(!a)return res.status(404).json({error:'Not found'});
+      if(a.streamerId!==s.userId)return res.status(403).json({error:'権限なし'});
+      a.isTimelapse=false;saveArchives();
+    }
+    res.json({ok:true});
+  }catch(e){res.status(500).json({error:e.message});}
 });
 
 // ── 自分のアーカイブ ──
