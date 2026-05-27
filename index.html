@@ -308,6 +308,10 @@ body>*{position:relative;z-index:1;}
 
 /* ── 配信ヘッダー（ダーク） ── */
 .sh{display:flex;align-items:center;padding:7px 12px;border-bottom:1px solid rgba(180,130,255,.1);gap:9px;flex-shrink:0;background:rgba(15,10,35,.95);box-shadow:0 2px 12px rgba(0,0,0,.3);}
+#sc-s .sh{display:none!important;}
+#ms-comment-flow{position:absolute;bottom:115px;left:12px;right:72px;pointer-events:none;overflow:hidden;z-index:2;display:flex;flex-direction:column-reverse;gap:4px;max-height:45%;}
+.ms-fcmt{display:inline-block;background:rgba(0,0,0,.55);color:#fff;font-size:13px;border-radius:20px;padding:5px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;opacity:0;animation:ms-fcmt-anim 6s linear forwards;}
+@keyframes ms-fcmt-anim{0%{opacity:0;transform:translateX(-6px)}8%{opacity:1;transform:translateX(0)}80%{opacity:1}100%{opacity:0}}
 .ava{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#FF6A20,#FFD700);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0;box-shadow:0 0 10px rgba(255,160,0,.3);}
 .sname{font-size:12px;font-weight:700;color:#E8E0FF;}
 .sgoal{font-size:11px;color:rgba(180,150,255,.55);margin-top:1px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -967,15 +971,9 @@ body>*{position:relative;z-index:1;}
         </div>
         <!-- アーカイブタブ -->
         <div id="mp-archive" style="display:none;">
-          <div class="card-grid" id="mp-arch-grid"></div>
-          <div class="empty-state" id="mp-arch-empty" style="display:none;"><div class="empty-icon">📼</div><div class="empty-text">アーカイブはまだありません</div></div>
-        </div>
-        <!-- タイムラプスタブ -->
-        <div id="mp-timelapse" style="display:none;">
-          <!-- ★ 手動アップロードエリア -->
-          <div class="dash-card" style="margin-bottom:16px;">
-            <div class="dash-card-title">📤 録画をアップロード</div>
-            <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信終了時にダウンロードされた録画ファイルをアップロードするとアーカイブで再生できます</div>
+          <div class="dash-card" id="upload-rec-card" style="margin-bottom:16px;transition:box-shadow .4s;">
+            <div class="dash-card-title">📤 録画をアーカイブに保存</div>
+            <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:10px;">配信の録画ファイルをアーカイブに紐付けて保存できます</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <select id="upload-archive-sel" style="flex:1;min-width:160px;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:8px 10px;color:#F0EEFF;font-size:12px;font-family:'Noto Sans JP',sans-serif;">
                 <option value="">紐付けるアーカイブを選択...</option>
@@ -997,9 +995,14 @@ body>*{position:relative;z-index:1;}
               <div id="upload-prog-text" style="font-size:11px;color:rgba(180,150,255,.5);margin-top:4px;text-align:center;">アップロード中...</div>
             </div>
           </div>
-          <div style="font-size:12px;color:rgba(180,150,255,.4);margin-bottom:12px;">アーカイブ一覧（録画あり）</div>
+          <div class="card-grid" id="mp-arch-grid"></div>
+          <div class="empty-state" id="mp-arch-empty" style="display:none;"><div class="empty-icon">📼</div><div class="empty-text">アーカイブはまだありません</div></div>
+        </div>
+        <!-- タイムラプスタブ（一般公開するもの） -->
+        <div id="mp-timelapse" style="display:none;">
+          <div style="font-size:12px;color:rgba(180,150,255,.5);margin-bottom:14px;">アーカイブから⚡ TL投稿した動画が表示されます。一般に公開されます。</div>
           <div class="card-grid" id="mp-tl-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));"></div>
-          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">配信終了後に録画をアップロードしてください</span></div></div>
+          <div class="empty-state" id="mp-tl-empty" style="display:none;"><div class="empty-icon">🎬</div><div class="empty-text" style="color:rgba(180,150,255,.4);">タイムラプスはまだありません<br><span style="font-size:12px;">アーカイブから「⚡ TL投稿」を押してください</span></div></div>
         </div>
         <!-- インサイトタブ -->
         <div id="mp-insight" style="display:none;">
@@ -1081,6 +1084,7 @@ body>*{position:relative;z-index:1;}
           <div class="ms-goal-lbl">TODAY'S GOAL</div>
           <div class="ms-goal-txt" id="ms-goal-txt">目標</div>
         </div>
+        <div id="ms-comment-flow"></div>
         <!-- 下部エリア -->
         <div class="ms-bottom">
           <div style="display:flex;gap:8px;">
@@ -2002,28 +2006,36 @@ function switchHomeTab(tab){
 }
 
 // ── タイムラプス描画 ──
-function renderTimelapse(){
+async function renderTimelapse(){
   const grid=ge('timelapse-grid'),em=ge('timelapse-empty');
-  if(!archiveList.length){if(grid)grid.innerHTML='';if(em)em.style.display='';return;}
-  if(em)em.style.display='none';
-  if(grid)grid.innerHTML=archiveList.map((a,i)=>{
-    const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
-    const ava=a.streamerName?a.streamerName[0]:'?';
-    const achieved=(a.achievePct||a.achieve_pct||0)>=70;
-    const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
-    return`<div class="tlcard" onclick="openArchModal(archiveList[${i}])">
-      <div class="tlcard-thumb">
-        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(${achieved?'0,200,83':'180,80,255'},.08),transparent);"></div>
-        <div style="font-size:48px;filter:drop-shadow(0 4px 16px rgba(255,150,0,.4));z-index:1;">${a.emoji||'🎯'}</div>
-        <div class="tlcard-play">▶</div>
-        <div class="tlcard-dur">30秒</div>
-        ${achieved?'<div style="position:absolute;top:8px;left:8px;background:linear-gradient(90deg,rgba(0,200,83,.85),rgba(0,230,118,.7));color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;font-family:\'Space Mono\',monospace;z-index:2;">✅ 達成</div>':''}
-      </div>
-      <div class="tlcard-body">
-        <div class="tlcard-title">${esc(a.title)}</div>
-        <div class="tlcard-meta"><div class="tlcard-ava">${ava}</div><span>${esc(a.streamerName)}</span><span style="margin-left:auto;">${ach}</span></div>
-      </div></div>`;
-  }).join('');
+  try{
+    const r=await fetch('/api/timelapse');
+    const d=await r.json();
+    const list=d.archives||[];
+    window._tlList=list;
+    if(!list.length){if(grid)grid.innerHTML='';if(em)em.style.display='';return;}
+    if(em)em.style.display='none';
+    if(grid)grid.innerHTML=list.map((a,i)=>{
+      const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
+      const ava=a.streamerName?a.streamerName[0]:'?';
+      const achieved=(a.achievePct||a.achieve_pct||0)>=70;
+      const hasRec=!!(a.recordingUrl||a.recording_url);
+      const dur=Math.floor((a.durationSec||a.duration_sec||0)/60);
+      return`<div class="tlcard" onclick="openArchModal(window._tlList[${i}])">
+        <div class="tlcard-thumb">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(${achieved?'0,200,83':'180,80,255'},.08),transparent);"></div>
+          <div style="font-size:48px;filter:drop-shadow(0 4px 16px rgba(255,150,0,.4));z-index:1;">${a.emoji||'🎯'}</div>
+          <div class="tlcard-play">${hasRec?'▶':'📊'}</div>
+          <div class="tlcard-dur">${dur}分</div>
+          ${achieved?'<div style="position:absolute;top:8px;left:8px;background:linear-gradient(90deg,rgba(0,200,83,.85),rgba(0,230,118,.7));color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;z-index:2;">✅ 達成</div>':''}
+        </div>
+        <div class="tlcard-body">
+          <div class="tlcard-title">${esc(a.title)}</div>
+          <div class="tlcard-meta"><div class="tlcard-ava">${ava}</div><span>${esc(a.streamerName)}</span><span style="margin-left:auto;">${ach}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){if(em)em.style.display='';}
 }
 
 // ── クエストページ更新 ──
@@ -2042,8 +2054,8 @@ function switchMpTab(tab){
     ge('mp-'+t).style.display=(t===tab)?'':'none';
     ge('mp-tab-'+t).classList.toggle('on',t===tab);
   });
-  if(tab==='archive')fetchMpArchives();
-  if(tab==='timelapse'){fetchMpTimelapse();populateArchiveSel();}
+  if(tab==='archive'){fetchMpArchives();populateArchiveSel();}
+  if(tab==='timelapse'){fetchMpTimelapse();}
   if(tab==='insight')fetchInsights();
 }
 
@@ -2114,6 +2126,7 @@ async function uploadRecording(){
         fetchMpTimelapse();
         fetchMpArchives();
         populateArchiveSel();
+        switchMpTab('archive');
       },1500);
     }else{
       alert('アップロードに失敗しました');
@@ -2133,31 +2146,31 @@ async function fetchMpTimelapse(){
   try{
     const r=await fetch('/api/archives/mine',{headers:{Authorization:'Bearer '+AT}});
     const d=await r.json();
-    const list=d.archives||[];
+    const list=(d.archives||[]).filter(a=>a.isTimelapse||a.is_timelapse);
     const grid=ge('mp-tl-grid'), em=ge('mp-tl-empty');
     if(!list.length){if(grid)grid.innerHTML='';if(em)em.style.display='';return;}
     if(em)em.style.display='none';
-    // mpArchListとは別に保持
     window.mpTlList=list;
     if(grid)grid.innerHTML=list.map((a,i)=>{
       const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
-      const ava=a.streamerName?a.streamerName[0]:'?';
       const achieved=(a.achievePct||a.achieve_pct||0)>=70;
       const dur=Math.floor((a.durationSec||a.duration_sec||0)/60);
       const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
       const hasRec=!!(a.recordingUrl||a.recording_url);
-      return`<div class="tlcard" onclick="openArchModal(window.mpTlList[${i}])">
-        <div class="tlcard-thumb">
+      return`<div class="tlcard">
+        <div class="tlcard-thumb" style="cursor:pointer;" onclick="openArchModal(window.mpTlList[${i}])">
           <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(${achieved?'0,200,83':'180,80,255'},.1),transparent);"></div>
           <div style="font-size:40px;filter:drop-shadow(0 4px 16px rgba(255,150,0,.4));z-index:1;">${a.emoji||'🎯'}</div>
           <div class="tlcard-play">${hasRec?'▶':'📊'}</div>
-          <div class="tlcard-dur">${hasRec?'30秒':'統計'}</div>
-          ${achieved?'<div style="position:absolute;top:6px;left:6px;background:linear-gradient(90deg,rgba(0,200,83,.85),rgba(0,230,118,.7));color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;font-family:\'Space Mono\',monospace;z-index:2;">✅ 達成</div>':''}
+          <div class="tlcard-dur">${dur}分</div>
+          ${achieved?'<div style="position:absolute;top:6px;left:6px;background:linear-gradient(90deg,rgba(0,200,83,.85),rgba(0,230,118,.7));color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;z-index:2;">✅ 達成</div>':''}
         </div>
         <div class="tlcard-body">
           <div class="tlcard-title">${esc(a.title)}</div>
-          <div class="tlcard-meta"><span>${date}</span><span>${dur}分</span><span style="margin-left:auto;color:#FFD700;">${ach}</span></div>
-        </div></div>`;
+          <div class="tlcard-meta"><span>${date}</span><span style="margin-left:auto;color:#FFD700;">${ach}</span></div>
+          <button onclick="unpostTimelapse('${a.id}',event)" style="margin-top:6px;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);color:rgba(200,180,255,.6);border-radius:6px;padding:4px 0;font-size:10px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">📼 アーカイブに戻す</button>
+        </div>
+      </div>`;
     }).join('');
   }catch(e){}
 }
@@ -2274,6 +2287,29 @@ async function stopRecording(){
     mediaRecorder.stop();
   });
 }
+async function deleteArchive(archiveId,e){
+  if(e)e.stopPropagation();
+  if(!confirm('このアーカイブと録画ログを削除しますか？\nこの操作は取り消せません。'))return;
+  try{const r=await fetch(`/api/archives/${archiveId}`,{method:'DELETE',headers:{Authorization:'Bearer '+AT}});
+    if(r.ok){fetchMpArchives();}else{const d=await r.json().catch(()=>({}));alert('削除に失敗しました: '+(d.error||r.status));}}
+  catch(err){alert('エラー: '+err.message);}
+}
+async function postAsTimelapse(archiveId){
+  if(!confirm('このアーカイブをタイムラプスとして一般公開しますか？'))return;
+  try{const r=await fetch(`/api/archives/${archiveId}/timelapse`,{method:'POST',headers:{Authorization:'Bearer '+AT,'Content-Type':'application/json'}});
+    if(r.ok){fetchMpArchives();fetchMpTimelapse();
+      const ok=document.createElement('div');ok.style.cssText="position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,200,100,.9);border-radius:10px;padding:8px 18px;font-size:13px;color:#fff;font-weight:700;z-index:9999;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;";ok.textContent='⚡ タイムラプスに投稿しました！';document.body.appendChild(ok);setTimeout(()=>ok.remove(),3000);
+    }else{const d=await r.json().catch(()=>({}));alert('投稿に失敗しました: '+(d.error||r.status));}}
+  catch(err){alert('エラー: '+err.message);}
+}
+async function unpostTimelapse(archiveId,e){
+  if(e)e.stopPropagation();
+  if(!confirm('タイムラプスの公開を取り消してアーカイブに戻しますか？'))return;
+  try{const r=await fetch(`/api/archives/${archiveId}/timelapse`,{method:'DELETE',headers:{Authorization:'Bearer '+AT}});
+    if(r.ok){fetchMpArchives();fetchMpTimelapse();}else{const d=await r.json().catch(()=>({}));alert('取り消しに失敗しました: '+(d.error||r.status));}}
+  catch(err){alert('エラー: '+err.message);}
+}
+
 async function fetchMpArchives(){
   if(!AT)return;
   try{
@@ -2288,7 +2324,24 @@ async function fetchMpArchives(){
       const date=a.endedAt||a.ended_at?new Date(a.endedAt||a.ended_at).toLocaleDateString('ja-JP'):'';
       const ach=a.achievePct!=null?a.achievePct+'%':a.achieve_pct!=null?a.achieve_pct+'%':'—';
       const hasRec=!!(a.recordingUrl||a.recording_url);
-      return`<div class="scard rarity-n" onclick="openArchModal(window.mpArchList[${i}])" style="cursor:pointer;"><div class="scard-thumb cat-${a.category||'その他'}"><div class="scard-emoji">${a.emoji||'🎯'}</div><div class="wbtn"><span>${hasRec?'▶ 動画を見る':'📊 詳細を見る'}</span></div><div class="scard-arch-badge">${hasRec?'🎬 録画あり':'📼 '+date}</div><div class="scard-viewers">⏱ ${dur}</div></div><div class="scard-body"><div class="scard-title">${esc(a.title)}</div><div class="scard-bot" style="margin-top:6px;"><div class="scard-cat">${a.category}</div><div class="scard-gift">🏆 ${ach}</div></div></div></div>`;
+      const isTL=!!(a.isTimelapse||a.is_timelapse);
+      return`<div class="scard rarity-n" style="cursor:default;">
+        <div class="scard-thumb cat-${a.category||'その他'}" style="cursor:pointer;" onclick="openArchModal(window.mpArchList[${i}])">
+          <div class="scard-emoji">${a.emoji||'🎯'}</div>
+          <div class="wbtn"><span>${hasRec?'▶ 動画を見る':'📊 詳細を見る'}</span></div>
+          <div class="scard-arch-badge">${hasRec?'🎬 録画あり':'📼 '+date}</div>
+          <div class="scard-viewers">⏱ ${dur}</div>
+        </div>
+        <div class="scard-body">
+          <div class="scard-title">${esc(a.title)}</div>
+          <div class="scard-bot" style="margin-top:6px;"><div class="scard-cat">${a.category}</div><div class="scard-gift">🏆 ${ach}</div></div>
+          <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+            ${hasRec&&!isTL?`<button onclick="postAsTimelapse('${a.id}')" style="flex:1;background:linear-gradient(135deg,rgba(224,64,251,.2),rgba(123,31,162,.3));border:1px solid rgba(224,64,251,.4);color:#E040FB;border-radius:6px;padding:5px 6px;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;white-space:nowrap;">⚡ TL投稿</button>`:''}
+            ${isTL?`<span style="flex:1;text-align:center;font-size:10px;color:rgba(224,64,251,.7);padding:5px 2px;border:1px solid rgba(224,64,251,.2);border-radius:6px;">✅ 公開中</span>`:''}
+            <button onclick="deleteArchive('${a.id}',event)" style="background:rgba(255,50,50,.1);border:1px solid rgba(255,50,50,.2);color:rgba(255,100,100,.8);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">🗑</button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
     window.mpArchList=list;
   }catch(e){}
@@ -2390,7 +2443,14 @@ async function exitLive(){
   await Promise.all([fetchStreams(),fetchInsights()]);
   if(role==='streamer'){
     showPage('mypage');
-    setTimeout(()=>switchMpTab('archive'),400);
+    setTimeout(async ()=>{
+      switchMpTab('archive');
+      await populateArchiveSel();
+      const sel=ge('upload-archive-sel');
+      if(sel&&sel.options.length>1)sel.selectedIndex=1;
+      const card=ge('upload-rec-card');
+      if(card){card.style.transition='box-shadow .4s';card.style.boxShadow='0 0 0 2px #E040FB,0 0 24px rgba(224,64,251,.5)';setTimeout(()=>{card.style.boxShadow='';},3000);}
+    },400);
   }else{
     showPage('home');
   }
@@ -2405,6 +2465,7 @@ function resetLivePage(){
   if(sb){sb.disabled=true;sb.textContent='📷 カメラ接続中...';sb.style.background='var(--o)';sb.style.boxShadow='0 4px 12px rgba(255,77,0,.28)';sb.onclick=startLive;}
   G.boost=1.0;G.giftTotal=0;G.liveViewers=0;G.streamSec=0;G.bombClears=0;G.bombFails=0;G.totalPushes=0;
   G_tasks={};G_votedTasks={};G_currentVoteTaskId=null;
+  G_msComments.length=0;
   updAll();
 }
 
@@ -2672,6 +2733,18 @@ function onPush(){
 // スマホ配信者UI (JSXデザイン準拠)
 // ============================================================
 let msDrTabIdx=0;
+const G_msComments=[];
+function msFlowComment(user,text,type){
+  if(!isMobile()||G.role!=='streamer')return;
+  G_msComments.push({user,text,type});if(G_msComments.length>100)G_msComments.shift();
+  const flow=ge('ms-comment-flow');
+  if(flow){const el=document.createElement('div');el.className='ms-fcmt';
+    if(type==='sys'){el.style.color='rgba(255,160,80,.9)';el.textContent=text;}
+    else{el.innerHTML=`<span style="font-weight:700;color:rgba(255,200,100,.95);">${esc(user)}</span> ${esc(text)}`;}
+    flow.prepend(el);while(flow.children.length>8)flow.lastChild.remove();setTimeout(()=>el.remove(),6200);}
+  if(type!=='sys'){const c=ge('ms-cmts');if(c)c.textContent=(parseInt(c.textContent||'0')+1);}
+  if(ge('ms-drawer')?.classList.contains('on')&&msDrTabIdx===1)msDrRender();
+}
 
 function msInit(){
   if(!isMobile())return;
@@ -2702,9 +2775,10 @@ function msInit(){
 }
 
 function msSend(){
-  const inp=ge('ms-inp');
-  if(!inp||!inp.value.trim())return;
-  socket.emit('chat_message',{streamId:currentStreamId,text:inp.value.trim(),token:AT});
+  const inp=ge('ms-inp');if(!inp||!inp.value.trim())return;
+  const text=inp.value.trim(),myName=CU?.name||'自分';
+  msFlowComment(myName,text,'normal');
+  socket.emit('chat_message',{streamId:currentStreamId,text,token:AT});
   inp.value='';
 }
 
@@ -2733,8 +2807,12 @@ function msDrRender(){
       return`<div class="ms-task${done?' done':''}"><div><div class="ms-task-name${done?' done':''}">${esc(t.trial)}</div><div class="ms-task-from">from ${esc(t.sender)}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;"><div style="color:#ff6b35;font-size:13px;font-weight:700;">+${t.boost}%</div>${done?'<span class="ms-task-donelbl">✓ クリア済</span>':`<button class="ms-task-clrbtn" onclick="completeTask('${t.taskId}');msDrRender()">クリア</button>`}</div></div>`;
     }).join('');
   }else if(msDrTabIdx===1){
-    const chatEl=ge('chat-s');
-    el.innerHTML=chatEl?.innerHTML||'<div style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:24px 0;">コメントはまだありません</div>';
+    if(!G_msComments.length){el.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:13px;text-align:center;padding:24px 0;">コメントはまだありません</div>';return;}
+    el.innerHTML=G_msComments.map(c=>{
+      if(c.type==='sys')return`<div style="color:rgba(255,140,60,.7);font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">${esc(c.text)}</div>`;
+      return`<div style="padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);"><span style="font-weight:700;color:rgba(255,200,100,.9);font-size:12px;">${esc(c.user)}</span> <span style="color:rgba(220,200,255,.8);font-size:13px;">${esc(c.text)}</span></div>`;
+    }).join('');
+    el.scrollTop=el.scrollHeight;
   }else{
     const stats=[
       {l:'ギフト合計',v:'¥'+(G.giftTotal||0).toLocaleString(),i:'🎁',c:'#ff6b35'},
@@ -2844,26 +2922,16 @@ function addFloatingComment(text, user) {
   setTimeout(() => el.remove(), 6500);
 }
 
-// チャットメッセージ受信時に流れるコメントも追加
-const _origChatBoth = chatBoth;
-function chatBoth(user, text, type) {
-  _origChatBoth(user, text, type);
-  if (type !== 'sys' && isMobile()) {
-    addFloatingComment(text, user === 'SYSTEM' ? null : user);
+// モバイル視聴者チャット表示（chatBothの受信を補完）
+socket.on('chat_message', d => {
+  // addMsgBoth は socket handler で既に呼ばれている
+  // スマホ視聴者のfloating comment
+  if(d.type!=='sys'&&isMobile()&&G.role!=='streamer') addFloatingComment(d.text, d.user==='SYSTEM'?null:d.user);
+  if(isMobile()&&G.role!=='streamer'){
+    const mc=ge('mobile-chat-msgs');
+    if(mc){const div=document.createElement('div');div.style.cssText='font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);';if(d.type==='sys')div.style.color='rgba(255,140,80,.7)';div.innerHTML=`<span style="font-weight:700;color:rgba(180,150,255,.8);">${esc(d.user)}</span> <span style="color:rgba(220,200,255,.85);">${esc(d.text)}</span>`;mc.appendChild(div);mc.scrollTop=mc.scrollHeight;}
   }
-  // モバイルチャットにも追加
-  if (isMobile()) {
-    const mc = ge('mobile-chat-msgs');
-    if (mc) {
-      const d = document.createElement('div');
-      d.style.cssText = 'font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);';
-      if (type === 'sys') d.style.color = 'rgba(255,140,80,.7)';
-      d.innerHTML = `<span style="font-weight:700;color:rgba(180,150,255,.8);">${esc(user)}</span> <span style="color:rgba(220,200,255,.85);">${esc(text)}</span>`;
-      mc.appendChild(d);
-      mc.scrollTop = mc.scrollHeight;
-    }
-  }
-}
+});
 
 // ★ カメラ直接テスト（Agoraを使わずgetUserMediaで確認）
 async function testCamera(){
@@ -3015,8 +3083,13 @@ function addMsg(side,user,text,type,color){
   area.appendChild(m);area.scrollTop=area.scrollHeight;
   while(area.children.length>80)area.removeChild(area.firstChild);
 }
-function addMsgBoth(u,t,type,color){addMsg('s',u,t,type,color);addMsg('v',u,t,type,color);}
-function chatBoth(u,t,type){addMsg('s',u,t,type);addMsg('v',u,t,type);}
+function addMsgBoth(u,t,type,color){
+  addMsg('s',u,t,type,color);
+  addMsg('v',u,t,type,color);
+  // スマホ配信者のコメント流れ表示
+  msFlowComment(u,t,type);
+}
+function chatBoth(u,t,type){addMsg('s',u,t,type);addMsg('v',u,t,type);msFlowComment(u,t,type);}
 function sendMsg(side){
   const inp=ge('inp-'+side),text=inp?.value.trim();if(!text)return;
   if(currentStreamId)socket.emit('chat_message',{streamId:currentStreamId,user:CU?.name||'名無し',text,type:'normal',color:G.myColor,token:AT});
