@@ -1,0 +1,710 @@
+/* ============================================================
+   PUSH ギルドテーマ  guild-theme.css  (v10)
+   ------------------------------------------------------------
+   v10: スマホ配信を全画面・没入レイアウトに。カメラを全画面の
+        縦動画にし、操作系を映像の上へフロート配置（モック準拠）。
+   差し替えたら index.html の <link> を ?v=10 に上げてください。
+   v9: スマホのカメラ映像を縦型に。 v8: 実機配信画面を着せ替え。
+   v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
+       各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
+   v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
+       クエスト一覧を羊皮紙の依頼札に
+   使い方: index.html の </head> の直前に1行だけ追加するだけ。
+     <link rel="stylesheet" href="/guild-theme.css">
+   ※ 既存の <style> より「後」に読み込むのが条件（上書きのため）。
+   このファイルを index.html と同じ階層に置けば
+   express.static でそのまま配信されます。
+
+   やっていること:
+   1. :root のカラー変数を木目・羊皮紙・松明色へ総入れ替え
+   2. フォントをドット系（DotGothic16 / Press Start 2P）へ
+   3. ナビ/サイドバー/カード/ボタン/入力/アバター等を木札・羊皮紙化
+   見た目だけの着せ替えです。文言（配信→探索 等）は別途HTML/JS側で。
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap');
+
+/* ── 1. パレット差し替え ───────────────────────── */
+:root{
+  /* アクセント：松明の炎 */
+  --o:#E8642A; --o2:#FF7A3C;
+  --g:#6F8F3A;            /* 成功＝苔緑 */
+  --r:#B8341A;            /* 危険＝残り火 */
+  --b:#3C7FA6;            /* ランタン青（控えめ） */
+  /* 金属：金貨の真鍮 */
+  --gold:#E0B24A; --gold2:#C8941F; --silver:#B8A888; --bronze:#A86A3A;
+  /* 紫アクセント → 古び金へ寄せて全体を暖色に */
+  --purple:#C8A05A; --cyan:#9FB87A;
+  /* 背景：焦げ樫 */
+  --bg:#1A130B; --surf:#2A1A0D; --card:#33240F; --card2:#3F2D16;
+  --border:rgba(120,90,40,.35); --border2:rgba(180,140,80,.45);
+  /* 文字：羊皮紙 */
+  --text:#F0E0BC; --muted:rgba(220,200,150,.5);
+  --sh:4px 4px 0 rgba(0,0,0,.5);
+  /* グロー */
+  --glow-o:0 0 18px rgba(232,100,42,.4);
+  --glow-gold:0 0 18px rgba(224,178,74,.4);
+  --glow-purple:0 0 16px rgba(200,160,90,.3);
+
+  /* 質感トークン（このテーマ専用） */
+  --wood:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, #4A2F18 0 13px, #3A2410 13px 26px),
+    linear-gradient(180deg, #4A2F18, #2A1A0D);
+  --wood-dark:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #2A1A0D, #1A1108);
+  /* 紙の繊維ノイズ（茶色い斑点をアルファで散らす・ネット不要のSVG） */
+  --paper-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.42 0 0 0 0 0.27 0 0 0 0 0.11 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  /* 古紙：ノイズ＋茶のシミ(foxing)＋四隅の焼け＋黄ばんだ不均一な下地 */
+  --parch:
+    var(--paper-noise),
+    radial-gradient(circle at 22% 28%, rgba(110,68,24,.18) 0 4px, transparent 6px),
+    radial-gradient(circle at 71% 19%, rgba(120,74,28,.15) 0 3px, transparent 5px),
+    radial-gradient(circle at 84% 63%, rgba(96,58,20,.18) 0 5px, transparent 7px),
+    radial-gradient(circle at 37% 79%, rgba(118,78,33,.15) 0 4px, transparent 6px),
+    radial-gradient(ellipse at 14% 10%, rgba(108,66,24,.30), transparent 42%),
+    radial-gradient(ellipse at 88% 88%, rgba(92,56,20,.32), transparent 46%),
+    radial-gradient(ellipse at 50% 50%, rgba(120,72,30,0) 60%, rgba(96,58,22,.22) 100%),
+    linear-gradient(158deg, #dcc085 0%, #d1b36f 48%, #c2a05b 100%);
+  --bevel: inset 2px 2px 0 rgba(255,200,140,.28), inset -2px -2px 0 rgba(0,0,0,.5), 4px 4px 0 rgba(0,0,0,.45);
+  --bevel-parch: inset 1px 1px 0 rgba(240,224,180,.3), inset -2px -2px 0 rgba(110,80,38,.6), 2px 2px 0 rgba(0,0,0,.35);
+  --ink:#33230F;
+}
+
+/* ── 2. フォント：ドット絵化 ─────────────────────── */
+*{ font-family:'DotGothic16','Noto Sans JP',sans-serif !important; }
+body{ image-rendering:pixelated; }
+
+/* ロゴ "PUSH" はラテン語なので Press Start 2P がハマる
+   ※ 旧版は background→text 切り抜きで「オレンジの箱＋透明文字」になり消えていた。
+     塗りを消して真鍮色のベタ文字にして確実に表示する。 */
+.gnav-logo,.auth-logo{
+  font-family:'Press Start 2P',monospace !important;
+  background:none !important;
+  -webkit-background-clip:border-box !important; background-clip:border-box !important;
+  -webkit-text-fill-color:#F4C752 !important;   /* 透明文字を強制解除（これが効く） */
+  color:#F4C752 !important;
+  text-shadow:2px 2px 0 rgba(0,0,0,.55);
+  filter:none !important;
+}
+.auth-logo{ font-size:32px !important; line-height:1.5; }
+.gnav-logo{ font-size:16px !important; }
+/* 数字・LIVEピルなど短いラテンはドットフォントで */
+.plive-pill,.pviewers,.pboost,.cat-count{ font-family:'Press Start 2P',monospace !important; }
+.plive-pill{ font-size:8px !important; }
+.pviewers,.cat-count{ font-size:9px !important; }
+.pboost{ font-size:10px !important; }
+
+/* ── 3. 背景：ギルドホール ───────────────────────── */
+body::before{
+  background:
+    radial-gradient(ellipse at 12% 80%, rgba(232,100,42,.10), transparent 45%),
+    radial-gradient(ellipse at 88% 75%, rgba(232,100,42,.08), transparent 45%),
+    radial-gradient(ellipse at 50% 50%, #1f160c 0%, #120c06 100%) !important;
+}
+/* 石床ドットグリッドの薄いオーバーレイ */
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.10;
+  background-image:
+    linear-gradient(rgba(107,68,35,.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107,68,35,.6) 1px, transparent 1px);
+  background-size:26px 26px;
+}
+
+/* ── 4. ナビ / サイドバー：木の梁 ─────────────────── */
+.gnav{
+  background:var(--wood) !important;
+  border-bottom:3px solid #2A1A0D !important;
+  box-shadow:0 4px 0 rgba(0,0,0,.4), inset 0 2px 0 rgba(255,200,140,.15) !important;
+}
+.sidebar{
+  background:var(--wood-dark) !important;
+  border-right:3px solid #2A1A0D !important;
+}
+.sb-item.on{
+  background:rgba(232,100,42,.16) !important;
+  color:#FFB070 !important; border-left:3px solid var(--o) !important;
+  text-shadow:0 0 8px rgba(232,100,42,.4);
+}
+.sb-item:hover{ background:rgba(232,100,42,.10) !important; color:#FFB070 !important; }
+.sb-lbl{ color:rgba(224,178,74,.55) !important; }
+
+/* ── 5. 認証画面：木箱＋松明 ──────────────────────── */
+.auth-page{ background:linear-gradient(160deg,#1f160c,#2a1a0d 50%,#120c06) !important; }
+.auth-box{
+  background:var(--wood) !important;
+  border:3px solid #2A1A0D !important; border-radius:6px !important;
+  box-shadow:var(--bevel), 0 0 60px rgba(232,100,42,.12) !important;
+}
+.auth-box::after{ background:linear-gradient(90deg,transparent,rgba(224,178,74,.6),transparent) !important; }
+.auth-tab.on{ background:linear-gradient(180deg,var(--o),#C44A18) !important; box-shadow:var(--bevel) !important; }
+
+/* ── 6. カード類：木の依頼札 ─────────────────────── */
+.scard,.dash-card,.arch-stat{
+  background:var(--wood) !important;
+  border:2px solid #2A1A0D !important; border-radius:4px !important;
+  box-shadow:var(--bevel) !important;
+}
+.scard-thumb{ background:#160f07 !important; }
+
+/* ── 7. ボタン：彫り込みの木札（炎色） ───────────── */
+.asbmt,.gnav-live,.chatsbtn,.abtn,.arch-close-btn{
+  background:linear-gradient(180deg,var(--o),#C44A18) !important;
+  border:none !important; border-radius:4px !important; color:#FFF8EF !important;
+  box-shadow:var(--bevel) !important; letter-spacing:.04em;
+}
+.asbmt:hover,.gnav-live:hover{ transform:translate(-1px,-1px); filter:brightness(1.06); }
+/* 依頼（旧ボム）ボタン：紫→炎 */
+.bomb-btn{
+  background:rgba(232,100,42,.14) !important;
+  border:2px solid rgba(232,100,42,.45) !important; border-radius:4px !important;
+  color:#FFB892 !important; box-shadow:inset -2px -2px 0 rgba(0,0,0,.35) !important;
+}
+.bomb-btn:hover{ background:rgba(232,100,42,.22) !important; }
+
+/* ── 8. 入力欄：羊皮紙の記入欄 ───────────────────── */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,.cat-sel,.form-sel{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important; border-radius:3px !important;
+  color:var(--ink) !important; box-shadow:var(--bevel-parch) !important;
+}
+.ainp::placeholder,.chatinp::placeholder,.gnav-search input::placeholder,.cat-search-inp::placeholder{
+  color:rgba(90,65,30,.55) !important;
+}
+
+/* ── 9. アバター：角型の真鍮メダル ───────────────── */
+.ava,.gnav-ava,.pava{
+  border-radius:3px !important;
+  background:linear-gradient(135deg,#E0B24A,#A86A3A) !important;
+  box-shadow:inset 2px 2px 0 rgba(255,240,200,.45), 2px 2px 0 rgba(0,0,0,.4) !important;
+  border:none !important;
+}
+
+/* ── 10. ピル・バッジ：木の看板 ──────────────────── */
+.plive-pill{
+  background:linear-gradient(180deg,var(--r),#8C1F10) !important;
+  border-radius:3px !important; box-shadow:var(--bevel) !important;
+}
+.boostbadge,.connbadge,.prod-rank-badge,.fatigue-badge{
+  background:linear-gradient(180deg,#5A3A1E,#2A1A0D) !important;
+  border:2px solid rgba(224,178,74,.4) !important; border-radius:3px !important;
+  color:var(--gold) !important; box-shadow:var(--bevel) !important;
+}
+
+/* ── 11. チャット / ギフトバー：酒場の板 ─────────── */
+.chathd,.chatin,.giftbar{
+  background:var(--wood-dark) !important;
+  border-color:#2A1A0D !important;
+}
+.cmsg{ color:#E6D2A0 !important; }
+.cmsg.gift{ color:var(--gold) !important; }
+.cmsg.bomb{ color:#FFB892 !important; }
+.cmsg.sys{ color:rgba(224,178,74,.6) !important; }
+
+/* ── 12. 進捗バー：探索ゲージ ─────────────────────── */
+.boss-hp-bar,.fatigue-bar,.arch-result-bar{
+  background:#160f07 !important;
+  border:2px solid #2A1A0D !important; border-radius:3px !important;
+}
+.boss-hp-fill,.arch-vbar-yes{
+  background:linear-gradient(90deg,var(--o),#F0C84A) !important; border-radius:0 !important;
+}
+.fatigue-bar-fill.ok{ background:var(--g) !important; }
+.fatigue-bar-fill.warn{ background:var(--gold2) !important; }
+.fatigue-bar-fill.danger{ background:var(--r) !important; }
+
+/* ── 13. モーダル：開いた羊皮紙の巻物 ─────────────── */
+.arch-modal,.bsp{
+  background:var(--wood) !important;
+  border:3px solid #2A1A0D !important; border-radius:6px !important;
+  box-shadow:var(--bevel), 0 0 50px rgba(0,0,0,.6) !important;
+}
+.arch-body{ background:var(--parch) !important; color:var(--ink) !important; border-radius:3px; }
+.arch-body .arch-stat-lbl{ color:#6E4F24 !important; }
+
+/* ── 14. 角を全体的に削ってドットらしく ───────────── */
+.gnav-btn,.gnav-search input,.auth-tab,.sb-item,.cat-search-inp{ border-radius:3px !important; }
+
+/* ── 15. モーション配慮 ──────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+
+/* ============================================================
+   v2 追加分
+   ============================================================ */
+
+/* ── 16. 文字コントラスト改善（薄い紫 → 暖色） ───── */
+.auth-sub{ color:#E0C58E !important; }
+.auth-tab{ color:rgba(240,222,180,.7) !important; }      /* 非選択タブ（新規登録 等） */
+.aflbl,.form-lbl{ color:#E3C896 !important; }             /* 入力ラベル */
+.dash-title{ color:#F0C84A !important; text-shadow:2px 2px 0 rgba(0,0,0,.5); }
+.dash-sub{ color:rgba(232,214,165,.75) !important; }
+.dash-card-title{ color:#F0C84A !important; }
+/* マイページ等の薄い紫の見出し・本文も底上げ */
+.mp-name,#mp-name{ color:#F2E6C2 !important; }
+#mp-email{ color:rgba(224,200,150,.6) !important; }
+
+/* ── 17. クエスト一覧 = 羊皮紙の依頼札 ───────────── */
+/* 木の掲示板（dash-card）に貼られた紙、というギルドらしい見せ方 */
+#quest-catalog > div{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important;
+  border-radius:3px !important;
+  box-shadow:var(--bevel-parch) !important;
+}
+/* 中央テキスト列 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(1){ color:var(--ink) !important; }    /* クエスト名 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(2){ color:#7A5A2A !important; }        /* 説明 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(3){ color:#A8842C !important; }        /* ★難易度 */
+/* 右側の報酬 */
+#quest-catalog > div > div:nth-child(3) > div:nth-child(1){            /* +XP（マゼンタ→残り火色） */
+  color:#B8341A !important; text-shadow:none !important;
+  font-family:'Press Start 2P',monospace !important; font-size:11px !important;
+}
+#quest-catalog > div > div:nth-child(3) > div:nth-child(2){ color:#9A6B1C !important; }        /* ブースト */
+
+/* 参戦中のライブクエスト行も同じ紙に（構造不明なので色は安全側で） */
+#quest-live-list > div{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important; border-radius:3px !important;
+  box-shadow:var(--bevel-parch) !important; color:var(--ink) !important;
+}
+#quest-empty{ color:rgba(232,214,165,.7) !important; }
+
+/* ============================================================
+   v3 追加分 — 本格クエストボード
+   （参考画像：木枠＋四隅ボルト＋縦板に羊皮紙をピン留め）
+   ============================================================ */
+
+/* ── 18-a. 掲示板の本体（カタログを包むカード） ───── */
+#page-quest .dash-card:has(> #quest-catalog){
+  /* 四隅のボルト + 縦板 + 奥行き */
+  background:
+    radial-gradient(circle at 16px 16px, #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) 16px, #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at 16px calc(100% - 16px), #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, #5a3d20 0 38px, #4e3318 38px 76px),
+    linear-gradient(180deg, #5a3d20, #36230f) !important;
+  border:14px solid #3a2410 !important;
+  border-radius:8px !important;
+  box-shadow:
+    inset 0 0 0 2px #2a1a0d,
+    inset 0 0 46px rgba(0,0,0,.6),
+    6px 6px 0 rgba(0,0,0,.45) !important;
+  padding:24px 20px !important;
+}
+
+/* 板内の見出し（クエスト一覧 & EXP報酬）を彫り込み札に */
+#page-quest .dash-card:has(> #quest-catalog) .dash-card-title{
+  display:inline-block;
+  background:linear-gradient(180deg,#5a3d20,#3a2510);
+  border:2px solid #2a1a0d; border-radius:4px;
+  padding:6px 14px; margin-bottom:6px;
+  color:#e7c87a !important;
+  text-shadow:0 1px 0 rgba(255,220,150,.2), 0 -1px 0 rgba(0,0,0,.6);
+  box-shadow:var(--bevel);
+}
+
+/* ── 18-b. ページ見出し「クエストボード」を彫り板に ─ */
+#page-quest .dash-title{
+  display:inline-block;
+  background:linear-gradient(180deg,#5a3d20,#3a2510);
+  border:3px solid #2a1a0d; border-radius:5px;
+  padding:8px 20px;
+  color:#f0c84a !important;
+  text-shadow:0 2px 0 rgba(255,220,150,.18), 0 -2px 0 rgba(0,0,0,.65) !important;
+  box-shadow:var(--bevel);
+  letter-spacing:.08em;
+}
+
+/* ── 18-c. 依頼メモを横並び＆ピン留め＆斜め ──────── */
+#quest-catalog{
+  flex-direction:row !important;
+  flex-wrap:wrap !important;
+  gap:20px 16px !important;
+  align-items:flex-start !important;
+  padding:14px 6px 8px !important;
+  margin-top:6px !important;
+}
+#quest-catalog > div{
+  flex:1 1 240px !important;
+  max-width:320px;
+  position:relative !important;
+  padding:16px 14px 13px !important;
+  margin-top:8px !important;                 /* ピンのぶん上に余白 */
+  border:1px solid #c2a468 !important;
+  border-radius:2px !important;
+  box-shadow:
+    inset 0 0 22px rgba(150,110,50,.22),
+    2px 5px 9px rgba(0,0,0,.45) !important;  /* 板から浮かせる影 */
+  transition:transform .15s ease, box-shadow .15s ease !important;
+}
+/* 画鋲（赤いピン頭） */
+#quest-catalog > div::before{
+  content:''; position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+  width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #ffd98a 0 2px, #d23b1f 45%, #7c1d0e);
+  box-shadow:0 2px 4px rgba(0,0,0,.55), inset -1px -1px 2px rgba(0,0,0,.4);
+  z-index:3;
+}
+/* 紙ごとに少しずつ傾ける */
+#quest-catalog > div:nth-child(4n+1){ transform:rotate(-2deg); }
+#quest-catalog > div:nth-child(4n+2){ transform:rotate(1.5deg); }
+#quest-catalog > div:nth-child(4n+3){ transform:rotate(-1deg); }
+#quest-catalog > div:nth-child(4n){   transform:rotate(2.2deg); }
+/* ホバーで真っ直ぐ＆持ち上げ */
+#quest-catalog > div:hover{
+  transform:rotate(0deg) translateY(-4px) scale(1.02) !important;
+  box-shadow:
+    inset 0 0 22px rgba(150,110,50,.22),
+    5px 10px 16px rgba(0,0,0,.55) !important;
+  z-index:4;
+}
+
+/* スマホでは1列に畳む */
+@media (max-width:560px){
+  #quest-catalog > div{ flex-basis:100%; max-width:none; }
+}
+
+/* ============================================================
+   v4 追加分 — 古紙の縁の焼け・手擦れ
+   ============================================================ */
+/* 依頼メモ：縁を濃く焼けさせ、紙の角を古びた茶に */
+#quest-catalog > div{
+  border:1px solid #b0904f !important;
+  border-radius:2px !important;
+  box-shadow:
+    inset 0 0 18px rgba(120,78,30,.30),     /* 内側の焼け */
+    inset 0 0 40px rgba(150,110,55,.12),
+    2px 5px 9px rgba(0,0,0,.45) !important;  /* 板から浮かせる影 */
+}
+/* ホバー時も古紙の焼けを維持 */
+#quest-catalog > div:hover{
+  box-shadow:
+    inset 0 0 18px rgba(120,78,30,.30),
+    inset 0 0 40px rgba(150,110,55,.12),
+    5px 10px 16px rgba(0,0,0,.55) !important;
+}
+/* 入力欄やモーダルの紙も同じ古紙なので、内側の焼けを軽く足す */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,.arch-body{
+  box-shadow:
+    inset 1px 1px 0 rgba(240,224,180,.3),
+    inset 0 0 14px rgba(120,78,30,.18),
+    inset -2px -2px 0 rgba(110,80,38,.5) !important;
+}
+
+/* ============================================================
+   v6 — スマホ配信オーバーレイを「ゲームUI」に
+   ・角張りを廃止：丸い木彫メダル / 巻物 / 石盤調
+   ・ゴール札とコメントを控えめに（映像の邪魔をしない）
+   ============================================================ */
+
+/* LIVE → 残り火のリボン（角を丸く） */
+.ms-live-pill{
+  background:linear-gradient(180deg,#ff6a35,#c4301a) !important;
+  border:1px solid #ffcf6a !important; border-radius:13px !important;
+  font-family:'Press Start 2P',monospace !important; font-size:8px !important; letter-spacing:1px !important;
+  box-shadow:0 2px 5px rgba(0,0,0,.5) !important;
+}
+.ms-timer{ font-family:'Press Start 2P',monospace !important; font-size:11px !important; color:#f0e0bc !important; }
+.ms-viewers{ color:#f0e0bc !important; }
+
+/* 閉じる → 丸い石盤ボタン */
+.ms-close{
+  background:radial-gradient(circle at 35% 30%, #9a958c, #46423b 75%) !important;
+  border:2px solid #2a2622 !important; border-radius:50% !important; color:#f0e8d8 !important;
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.22), inset 0 -2px 3px rgba(0,0,0,.5), 0 2px 4px rgba(0,0,0,.5) !important;
+  backdrop-filter:none !important;
+}
+
+/* 右サイド → 丸い木彫メダル（真鍮の縁・ドーム状） */
+.ms-btn{
+  background:radial-gradient(circle at 36% 26%, #7c5331, #4a2f18 70%) !important;
+  border:2px solid #caa34a !important; border-radius:28px !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.35), inset 0 -3px 6px rgba(0,0,0,.5), 0 3px 7px rgba(0,0,0,.45) !important;
+  backdrop-filter:none !important; padding:10px 0 !important;
+}
+.ms-btn.bomb{
+  background:radial-gradient(circle at 36% 26%, #ff8a4a, #c4401a 72%) !important;
+  border-color:#ffcf6a !important;
+}
+.ms-btn-val{ color:#f4e3b0 !important; }
+.ms-btn-val.or{ color:#fff3e0 !important; }
+.ms-btn-lbl{ color:#ead6a6 !important; }
+.ms-badge{ background:#b8341a !important; border-radius:50% !important; box-shadow:0 0 6px rgba(255,80,40,.85) !important; }
+
+/* ゴール札 → 最小化（薄い小さなタグに） */
+.ms-goal{
+  bottom:auto !important; top:46px !important;            /* 中央下→上部の隅へ */
+  left:auto !important; right:14px !important; transform:none !important;
+  background:rgba(40,26,13,.5) !important;
+  border:1px solid rgba(224,178,74,.45) !important; border-radius:14px !important;
+  box-shadow:none !important; backdrop-filter:blur(6px) !important;
+  padding:3px 11px !important; max-width:52vw !important; opacity:.88;
+}
+.ms-goal-lbl{ font-size:8px !important; color:rgba(255,200,150,.85) !important; letter-spacing:1px !important; }
+.ms-goal-txt{ font-size:11px !important; color:#f0e0bc !important; font-weight:700 !important; }
+
+/* 流れるコメント → 控えめな半透明ピル（映像を塞がない） */
+#ms-comment-flow{ max-height:32% !important; opacity:.9 !important; }
+.ms-fcmt,.fcmt{
+  background:rgba(28,18,9,.5) !important; color:#f3e7cf !important;
+  border:1px solid rgba(224,178,74,.28) !important; border-radius:14px !important;
+  font-size:12px !important; padding:4px 11px !important;
+  box-shadow:none !important; backdrop-filter:blur(4px) !important;
+}
+
+/* 目標達成 → 丸い炎の宣言バナー */
+.ms-achieve-btn{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important;
+  border:2px solid #ffcf6a !important; border-radius:26px !important; color:#fff8ef !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5), inset 0 -3px 6px rgba(0,0,0,.4), 0 4px 8px rgba(0,0,0,.45) !important;
+  font-weight:800 !important;
+}
+/* 配信開始 → 丸い木のボタン */
+.ms-start-btn{
+  background:radial-gradient(circle at 50% 0%, #7c5331, #3a2410 80%) !important;
+  border:2px solid #caa34a !important; border-radius:26px !important; color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3), inset 0 -3px 6px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.45) !important;
+}
+
+/* コメント入力 → 巻物風の丸い古紙 */
+.ms-inp-wrap{
+  background:var(--parch) !important;
+  border:2px solid #b0904f !important; border-radius:22px !important;
+  box-shadow:inset 0 1px 2px rgba(255,240,200,.4), inset 0 -2px 4px rgba(110,80,38,.4), 0 2px 4px rgba(0,0,0,.4) !important;
+  backdrop-filter:none !important;
+}
+.ms-inp{ color:var(--ink) !important; }
+.ms-inp::placeholder{ color:rgba(90,65,30,.55) !important; }
+/* 送信 → 丸い炎ボタン */
+.ms-send-btn{
+  background:radial-gradient(circle at 36% 26%, #ff8a4a, #c4401a 72%) !important;
+  border:2px solid #ffcf6a !important; border-radius:50% !important; color:#fff8ef !important;
+  width:42px !important; height:42px !important; padding:0 !important; font-size:11px !important; line-height:1.1 !important;
+  box-shadow:inset 0 2px 2px rgba(255,225,180,.4), 0 2px 4px rgba(0,0,0,.45) !important;
+}
+
+/* ドロワー → 真鍮縁の丸い木枠 */
+.ms-drawer{
+  background:linear-gradient(180deg,#3a2410,#1a1108) !important;
+  border:3px solid #caa34a !important; border-bottom:none !important;
+  border-radius:22px 22px 0 0 !important; backdrop-filter:none !important;
+}
+
+/* ============================================================
+   v7 — 丸いゲームUIをアプリ全体のボタンへ拡張
+   角張ったベベルを廃止し、真鍮縁＋ドーム状の丸ボタンへ統一
+   ============================================================ */
+
+/* 主要CTA（炎の丸ボタン） */
+.asbmt,.gnav-live,.chatsbtn,.abtn,.arch-close-btn,.golive-btn,.start-btn,
+.task-done-btn,.ms-task-clrbtn,.vb-btn,.auth-tab.on,.mp-edit-btn,.mp-save-btn,.tvb-btn{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important;
+  border:2px solid #ffcf6a !important;
+  border-radius:24px !important;
+  color:#fff8ef !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5), inset 0 -3px 6px rgba(0,0,0,.4), 0 3px 7px rgba(0,0,0,.4) !important;
+  letter-spacing:.03em;
+  transition:transform .12s, filter .12s !important;
+}
+.asbmt:hover,.gnav-live:hover,.chatsbtn:hover,.abtn:hover,.golive-btn:hover,
+.start-btn:hover,.task-done-btn:hover,.vb-btn:hover{ transform:translateY(-1px); filter:brightness(1.06); }
+
+/* 副ボタン・アイコンボタン（木の丸メダル） */
+.gnav-btn,.gnav-grid,.bomb-btn,.mp-tab,.cat-pill,.arch-tab,.gnav-search-btn{
+  background:radial-gradient(circle at 40% 25%, #7c5331, #4a2f18 72%) !important;
+  border:2px solid #caa34a !important;
+  border-radius:20px !important;
+  color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3), inset 0 -3px 6px rgba(0,0,0,.5), 0 3px 6px rgba(0,0,0,.4) !important;
+}
+
+/* 入力欄も角を丸めて馴染ませる（古紙はそのまま） */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,
+.form-inp,.form-sel,.cat-sel{
+  border-radius:16px !important;
+}
+
+/* アバター → 丸い肖像メダル（真鍮の縁） */
+.ava,.gnav-ava,.pava{
+  border-radius:50% !important;
+  border:2px solid #caa34a !important;
+  box-shadow:inset 0 2px 2px rgba(255,240,200,.4), 0 2px 4px rgba(0,0,0,.4) !important;
+}
+
+/* ピル・バッジも丸く */
+.plive-pill,.boostbadge,.connbadge,.task-badge,.level-badge,.fatigue-badge,.prod-rank-badge{
+  border-radius:13px !important;
+}
+
+/* サイドバー項目 → 丸いハイライト（左の角アクセントは廃止） */
+.sb-item{ border-radius:14px !important; margin:3px 8px !important; }
+.sb-item.on{
+  border-left:none !important;
+  background:rgba(232,100,42,.18) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,180,120,.3) !important;
+}
+
+/* 認証タブの土台も丸く */
+.auth-tabs{ border-radius:22px !important; }
+.auth-tab{ border-radius:18px !important; }
+
+/* ============================================================
+   v8 — 実機のスマホ配信(視聴)画面を着せ替え【最重要】
+   実際に出ているのは #mobile-viewer-ui 配下の .mobile-* 群で
+   CSS未定義（iOS既定の白ボタン）だった。ここを実体に合わせて
+   ギルド化。上部 .live-top と下部 #mobile-nav も対応。
+   ============================================================ */
+
+/* 上部ライブバー */
+.live-top{ background:var(--wood-dark) !important; border-bottom:3px solid #2a1a0d !important; box-shadow:0 3px 0 rgba(0,0,0,.4) !important; }
+.l-logo{
+  background:none !important; -webkit-background-clip:border-box !important; background-clip:border-box !important;
+  -webkit-text-fill-color:#f4c752 !important; color:#f4c752 !important; filter:none !important;
+  font-family:'Press Start 2P',monospace !important; font-size:13px !important; text-shadow:2px 2px 0 rgba(0,0,0,.55) !important;
+}
+.l-back,.l-share{
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:18px !important; color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),0 2px 5px rgba(0,0,0,.4) !important;
+}
+.livebadge{
+  background:linear-gradient(180deg,#ff6a35,#c4301a) !important; border:1px solid #ffcf6a !important;
+  border-radius:13px !important; color:#fff !important; box-shadow:0 2px 5px rgba(0,0,0,.5) !important;
+}
+
+/* 下部ナビ → 木の梁（インライン紫を上書き） */
+#mobile-nav{
+  background:var(--wood) !important; border-top:3px solid #2a1a0d !important;
+  box-shadow:0 -4px 14px rgba(0,0,0,.5) !important;
+}
+#mobile-nav > button{ color:#d9c298 !important; }
+#mobile-nav > button[onclick*="stream"]{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border:2px solid #ffcf6a !important;
+  color:#fff8ef !important; box-shadow:inset 0 2px 3px rgba(255,225,180,.5),0 3px 7px rgba(0,0,0,.4) !important;
+}
+
+/* タイトル */
+.mtb-name{ color:#f2e6c2 !important; font-weight:700 !important; font-size:18px !important; }
+.mtb-goal{ color:rgba(232,214,165,.82) !important; font-size:13px !important; margin-top:2px !important; }
+
+/* 金額・PUSH・タブ・入力（すべてCSS未定義→新規） */
+.mobile-push-bar{ padding:8px 14px !important; }
+.mobile-amt-row{ display:flex !important; gap:8px !important; flex-wrap:wrap !important; margin-bottom:9px !important; }
+
+.mobile-amt-btn{
+  -webkit-appearance:none !important; appearance:none !important;
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:20px !important;
+  color:#f4e3b0 !important; font-weight:700 !important; font-size:13px !important; padding:8px 16px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),inset 0 -3px 6px rgba(0,0,0,.5),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-amt-btn.sel{ background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border-color:#ffcf6a !important; color:#fff8ef !important; }
+
+.mobile-push-btn{
+  -webkit-appearance:none !important; appearance:none !important; width:100% !important;
+  background:radial-gradient(circle at 50% 0%,#ff9a55,#c4401a 85%) !important;
+  border:2px solid #ffcf6a !important; border-radius:26px !important; color:#fff8ef !important; padding:13px !important; cursor:pointer !important;
+  display:flex !important; flex-direction:column !important; align-items:center !important; gap:1px !important;
+  box-shadow:inset 0 2px 4px rgba(255,225,180,.5),inset 0 -4px 8px rgba(0,0,0,.4),0 4px 10px rgba(0,0,0,.45) !important;
+}
+
+.mobile-tabs{ display:flex !important; gap:8px !important; padding:4px 14px 8px !important; }
+.mobile-tab{
+  -webkit-appearance:none !important; appearance:none !important; flex:1 !important;
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:20px !important;
+  color:#ead6a6 !important; font-weight:700 !important; font-size:13px !important; padding:9px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-tab.on{ background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border-color:#ffcf6a !important; color:#fff8ef !important; }
+
+.mobile-tab-content{ padding:4px 14px 14px !important; }
+.mobile-chat-inp{ display:flex !important; gap:9px !important; align-items:center !important; }
+.mobile-chat-inp input{
+  -webkit-appearance:none !important; appearance:none !important; flex:1 !important;
+  background:var(--parch) !important; border:2px solid #b0904f !important; border-radius:18px !important;
+  padding:9px 14px !important; color:var(--ink) !important; font-size:13px !important; outline:none !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-chat-inp input::placeholder{ color:rgba(90,65,30,.55) !important; }
+.mobile-chat-inp button{
+  -webkit-appearance:none !important; appearance:none !important;
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border:2px solid #ffcf6a !important; border-radius:18px !important;
+  color:#fff8ef !important; font-weight:700 !important; font-size:13px !important; padding:9px 16px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+
+/* ボム投下フォーム（インライン紫を上書き） */
+#mb-trial,#mb-boost{ background:var(--parch) !important; border:2px solid #b0904f !important; border-radius:14px !important; color:var(--ink) !important; }
+
+/* ============================================================
+   v9 — スマホのカメラ映像を縦型表示に
+   実画面（視聴側 #sc-v）の .smain は既定で横長帯だったので
+   縦長の枠にして object-fit:cover で縦動画として見せる。
+   配信者の全画面オーバーレイ #sc-s は対象外（既に全画面）。
+   ============================================================ */
+@media(max-width:768px){
+  .smain, #sc-v .smain{
+    height:60vh !important;
+    max-height:none !important;
+    min-height:0 !important;
+    aspect-ratio:auto !important;
+    flex-shrink:0 !important;
+    background:#0d0905 !important;
+  }
+  /* 動画は枠いっぱいに縦で埋める（中央クロップ） */
+  #remote-video, #remote-video video, #local-video, #local-video video,
+  .smain video, .smain .agora_video_player{
+    width:100% !important; height:100% !important; object-fit:cover !important;
+  }
+  /* 下のコントロール側はそのままスクロールで見せる */
+  #sc-v .sside{ flex:1 !important; overflow-y:auto !important; min-height:0 !important; }
+}
+
+/* ============================================================
+   v10 — スマホ配信を全画面・没入レイアウトに（モック準拠）
+   #sc-v の縦積み（動画＋下に操作）を、
+   「カメラ全画面 ＋ 操作を映像の上にフロート」へCSSで再配置。
+   ※ v9 の .smain 60vh はこの画面では全画面化に置き換わる。
+   ============================================================ */
+@media(max-width:768px){
+  /* 重複ヘッダ（アバター行）は隠す：上部は .live-top に集約 */
+  #sc-v .sh{ display:none !important; }
+
+  /* 本体を全面に */
+  #sc-v .sbody{ position:absolute !important; inset:0 !important; height:100% !important; display:block !important; overflow:hidden !important; }
+
+  /* カメラ映像を全画面の縦動画として背面に */
+  #sc-v .smain{ position:absolute !important; inset:0 !important; height:100% !important; max-height:none !important; z-index:1 !important; }
+  #sc-v #remote-video, #sc-v #remote-video video,
+  #sc-v .smain video, #sc-v .smain .agora_video_player{
+    width:100% !important; height:100% !important; object-fit:cover !important;
+  }
+
+  /* 操作系を映像の上にフロート（下からスクリム） */
+  #sc-v .sside{ position:absolute !important; inset:0 !important; background:transparent !important; overflow:visible !important; z-index:3 !important; pointer-events:none !important; }
+  #mobile-viewer-ui{
+    position:absolute !important; left:0 !important; right:0 !important; bottom:0 !important;
+    display:flex !important; flex-direction:column !important; gap:7px !important;
+    padding:64px 12px 72px !important;   /* 下は下部ナビ(56px)を避ける */
+    background:linear-gradient(to top, rgba(0,0,0,.8) 52%, rgba(0,0,0,.35) 80%, transparent) !important;
+    pointer-events:auto !important;
+  }
+
+  /* タイトル＆ゴールは小さく */
+  .mobile-title-bar{ padding:0 2px !important; }
+  .mtb-name{ font-size:15px !important; color:#fff !important; text-shadow:0 1px 3px rgba(0,0,0,.7) !important; }
+  .mtb-goal{ font-size:11px !important; color:rgba(255,235,205,.9) !important; text-shadow:0 1px 3px rgba(0,0,0,.7) !important; }
+
+  /* チャットは映像の上に重なる半透明リスト（高さ控えめ） */
+  .mobile-chat-msgs{ max-height:24vh !important; overflow-y:auto !important; background:transparent !important; }
+}
