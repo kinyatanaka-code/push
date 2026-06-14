@@ -1,10 +1,9 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v7)
+   PUSH ギルドテーマ  guild-theme.css  (v9)
    ------------------------------------------------------------
-   v7: 丸いゲームUIのボタンをアプリ全体へ拡張（角ばり廃止・
-       真鍮縁の丸ボタン / 丸い肖像アバター / ピルも丸く）。
-   差し替えたら index.html の <link> を ?v=7 に上げてください。
-   v6: スマホ配信オーバーレイをゲームUIに（丸メダル/巻物/石盤）。
+   v9: スマホのカメラ映像を縦型表示に（.smain を縦長枠＋cover）。
+   差し替えたら index.html の <link> を ?v=9 に上げてください。
+   v8: 実機のスマホ配信画面（.mobile-*／.live-top／#mobile-nav）。
    v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
        各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
@@ -553,3 +552,119 @@ body::after{
 /* 認証タブの土台も丸く */
 .auth-tabs{ border-radius:22px !important; }
 .auth-tab{ border-radius:18px !important; }
+
+/* ============================================================
+   v8 — 実機のスマホ配信(視聴)画面を着せ替え【最重要】
+   実際に出ているのは #mobile-viewer-ui 配下の .mobile-* 群で
+   CSS未定義（iOS既定の白ボタン）だった。ここを実体に合わせて
+   ギルド化。上部 .live-top と下部 #mobile-nav も対応。
+   ============================================================ */
+
+/* 上部ライブバー */
+.live-top{ background:var(--wood-dark) !important; border-bottom:3px solid #2a1a0d !important; box-shadow:0 3px 0 rgba(0,0,0,.4) !important; }
+.l-logo{
+  background:none !important; -webkit-background-clip:border-box !important; background-clip:border-box !important;
+  -webkit-text-fill-color:#f4c752 !important; color:#f4c752 !important; filter:none !important;
+  font-family:'Press Start 2P',monospace !important; font-size:13px !important; text-shadow:2px 2px 0 rgba(0,0,0,.55) !important;
+}
+.l-back,.l-share{
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:18px !important; color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),0 2px 5px rgba(0,0,0,.4) !important;
+}
+.livebadge{
+  background:linear-gradient(180deg,#ff6a35,#c4301a) !important; border:1px solid #ffcf6a !important;
+  border-radius:13px !important; color:#fff !important; box-shadow:0 2px 5px rgba(0,0,0,.5) !important;
+}
+
+/* 下部ナビ → 木の梁（インライン紫を上書き） */
+#mobile-nav{
+  background:var(--wood) !important; border-top:3px solid #2a1a0d !important;
+  box-shadow:0 -4px 14px rgba(0,0,0,.5) !important;
+}
+#mobile-nav > button{ color:#d9c298 !important; }
+#mobile-nav > button[onclick*="stream"]{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border:2px solid #ffcf6a !important;
+  color:#fff8ef !important; box-shadow:inset 0 2px 3px rgba(255,225,180,.5),0 3px 7px rgba(0,0,0,.4) !important;
+}
+
+/* タイトル */
+.mtb-name{ color:#f2e6c2 !important; font-weight:700 !important; font-size:18px !important; }
+.mtb-goal{ color:rgba(232,214,165,.82) !important; font-size:13px !important; margin-top:2px !important; }
+
+/* 金額・PUSH・タブ・入力（すべてCSS未定義→新規） */
+.mobile-push-bar{ padding:8px 14px !important; }
+.mobile-amt-row{ display:flex !important; gap:8px !important; flex-wrap:wrap !important; margin-bottom:9px !important; }
+
+.mobile-amt-btn{
+  -webkit-appearance:none !important; appearance:none !important;
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:20px !important;
+  color:#f4e3b0 !important; font-weight:700 !important; font-size:13px !important; padding:8px 16px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),inset 0 -3px 6px rgba(0,0,0,.5),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-amt-btn.sel{ background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border-color:#ffcf6a !important; color:#fff8ef !important; }
+
+.mobile-push-btn{
+  -webkit-appearance:none !important; appearance:none !important; width:100% !important;
+  background:radial-gradient(circle at 50% 0%,#ff9a55,#c4401a 85%) !important;
+  border:2px solid #ffcf6a !important; border-radius:26px !important; color:#fff8ef !important; padding:13px !important; cursor:pointer !important;
+  display:flex !important; flex-direction:column !important; align-items:center !important; gap:1px !important;
+  box-shadow:inset 0 2px 4px rgba(255,225,180,.5),inset 0 -4px 8px rgba(0,0,0,.4),0 4px 10px rgba(0,0,0,.45) !important;
+}
+
+.mobile-tabs{ display:flex !important; gap:8px !important; padding:4px 14px 8px !important; }
+.mobile-tab{
+  -webkit-appearance:none !important; appearance:none !important; flex:1 !important;
+  background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%) !important;
+  border:2px solid #caa34a !important; border-radius:20px !important;
+  color:#ead6a6 !important; font-weight:700 !important; font-size:13px !important; padding:9px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-tab.on{ background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border-color:#ffcf6a !important; color:#fff8ef !important; }
+
+.mobile-tab-content{ padding:4px 14px 14px !important; }
+.mobile-chat-inp{ display:flex !important; gap:9px !important; align-items:center !important; }
+.mobile-chat-inp input{
+  -webkit-appearance:none !important; appearance:none !important; flex:1 !important;
+  background:var(--parch) !important; border:2px solid #b0904f !important; border-radius:18px !important;
+  padding:9px 14px !important; color:var(--ink) !important; font-size:13px !important; outline:none !important;
+  font-family:'DotGothic16',monospace !important;
+}
+.mobile-chat-inp input::placeholder{ color:rgba(90,65,30,.55) !important; }
+.mobile-chat-inp button{
+  -webkit-appearance:none !important; appearance:none !important;
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important; border:2px solid #ffcf6a !important; border-radius:18px !important;
+  color:#fff8ef !important; font-weight:700 !important; font-size:13px !important; padding:9px 16px !important; cursor:pointer !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5),0 3px 6px rgba(0,0,0,.4) !important;
+  font-family:'DotGothic16',monospace !important;
+}
+
+/* ボム投下フォーム（インライン紫を上書き） */
+#mb-trial,#mb-boost{ background:var(--parch) !important; border:2px solid #b0904f !important; border-radius:14px !important; color:var(--ink) !important; }
+
+/* ============================================================
+   v9 — スマホのカメラ映像を縦型表示に
+   実画面（視聴側 #sc-v）の .smain は既定で横長帯だったので
+   縦長の枠にして object-fit:cover で縦動画として見せる。
+   配信者の全画面オーバーレイ #sc-s は対象外（既に全画面）。
+   ============================================================ */
+@media(max-width:768px){
+  .smain, #sc-v .smain{
+    height:60vh !important;
+    max-height:none !important;
+    min-height:0 !important;
+    aspect-ratio:auto !important;
+    flex-shrink:0 !important;
+    background:#0d0905 !important;
+  }
+  /* 動画は枠いっぱいに縦で埋める（中央クロップ） */
+  #remote-video, #remote-video video, #local-video, #local-video video,
+  .smain video, .smain .agora_video_player{
+    width:100% !important; height:100% !important; object-fit:cover !important;
+  }
+  /* 下のコントロール側はそのままスクロールで見せる */
+  #sc-v .sside{ flex:1 !important; overflow-y:auto !important; min-height:0 !important; }
+}
