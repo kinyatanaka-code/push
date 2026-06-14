@@ -1,10 +1,11 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v10)
+   PUSH ギルドテーマ  guild-theme.css  (v11)
    ------------------------------------------------------------
-   v10: スマホ配信を全画面・没入レイアウトに。カメラを全画面の
-        縦動画にし、操作系を映像の上へフロート配置（モック準拠）。
-   差し替えたら index.html の <link> を ?v=10 に上げてください。
-   v9: スマホのカメラ映像を縦型に。 v8: 実機配信画面を着せ替え。
+   v11: 高級路線（プレミアム・レトロ）。ドット書体は維持しつつ
+        配色/素材を黒革・本金・象牙へ。茶色のベタ塗りと
+        ネオン橙を廃し、深い地＋金のヘアライン＋赤銅に統一。
+   差し替えたら index.html の <link> を ?v=11 に上げてください。
+   v10: スマホ配信を全画面・没入レイアウトに。
    v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
        各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
@@ -708,3 +709,119 @@ body::after{
   /* チャットは映像の上に重なる半透明リスト（高さ控えめ） */
   .mobile-chat-msgs{ max-height:24vh !important; overflow-y:auto !important; background:transparent !important; }
 }
+
+/* ============================================================
+   v11 — 高級路線（プレミアム・レトロ）
+   ドット書体は維持。配色/素材を「黒革・本金・象牙」へ。
+   茶色のベタ塗りとネオン橙をやめ、深い地＋金のヘアライン＋
+   上質なアイボリー羊皮紙＋落ち着いた赤銅に統一。
+   差し替えたら index.html の <link> を ?v=11 に。
+   ============================================================ */
+:root{
+  --o:#C96A3A; --o2:#D97F4A;
+  --g:#7E8F4A; --r:#9C3F24; --b:#3C7FA6;
+  --gold:#D6B870; --gold2:#B8923F; --silver:#B8A888; --bronze:#A86A3A;
+  --purple:#C8A05A; --cyan:#9FB87A;
+  --bg:#120D08; --surf:#1A140E; --card:#1F1812; --card2:#261D14;
+  --border:rgba(214,184,112,.28); --border2:rgba(214,184,112,.5);
+  --text:#EFE6D2; --muted:rgba(231,220,193,.5);
+  --sh:0 10px 30px rgba(0,0,0,.5);
+  --glow-o:0 0 16px rgba(201,106,58,.35);
+  --glow-gold:0 0 16px rgba(214,184,112,.4);
+  --glow-purple:0 0 16px rgba(214,184,112,.25);
+  /* 深く艶のある暗い木目（面積は抑える） */
+  --wood:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.04) 0 1px, transparent 1px 5px),
+    linear-gradient(180deg, #2A2018, #18110A);
+  --wood-dark: linear-gradient(180deg, #16110B, #0E0A06);
+  /* 上質なアイボリーの羊皮紙（オレンジ味を抑える） */
+  --parch:
+    var(--paper-noise),
+    radial-gradient(ellipse at 15% 12%, rgba(150,120,60,.10), transparent 45%),
+    radial-gradient(ellipse at 86% 86%, rgba(140,110,55,.12), transparent 48%),
+    linear-gradient(160deg, #EFE6CD 0%, #E7DAB9 55%, #DDCFA6 100%);
+  /* チャンキーなベベルを廃止：金のヘアライン＋柔らかな影 */
+  --bevel: inset 0 0 0 1px rgba(214,184,112,.35), 0 6px 18px rgba(0,0,0,.45);
+  --bevel-parch: inset 0 0 0 1px rgba(168,127,55,.35), 0 4px 12px rgba(0,0,0,.3);
+  --ink:#3A2C18;
+}
+
+/* ロゴ：シャンパンゴールド（ドット書体は維持） */
+.gnav-logo,.auth-logo,.l-logo{
+  background:none !important; -webkit-text-fill-color:#E8CE86 !important; color:#E8CE86 !important;
+  text-shadow:0 1px 2px rgba(0,0,0,.6) !important; filter:none !important;
+}
+
+/* 主要CTA：落ち着いた赤銅＋金のヘアライン */
+.asbmt,.gnav-live,.chatsbtn,.abtn,.arch-close-btn,.golive-btn,.start-btn,.task-done-btn,
+.ms-task-clrbtn,.vb-btn,.auth-tab.on,.mp-edit-btn,.mp-save-btn,.tvb-btn,.bomb-btn,
+.mobile-amt-btn.sel,.mobile-push-btn,.mobile-tab.on,.ms-btn.bomb,.ms-achieve-btn,.ms-send-btn,
+.mobile-chat-inp button,#mobile-nav > button[onclick*="stream"]{
+  background:linear-gradient(180deg,#C96A3A,#9C3F24) !important;
+  border:1px solid rgba(247,226,170,.6) !important;
+  color:#FDF2DF !important;
+  box-shadow:inset 0 1px 0 rgba(255,225,180,.45), 0 4px 12px rgba(120,40,20,.35) !important;
+}
+
+/* 副・アイコン・メダル系：暗い地＋金のヘアライン（茶色をやめる） */
+.gnav-btn,.gnav-grid,.mp-tab,.cat-pill,.arch-tab,.gnav-search-btn,
+.mobile-amt-btn,.mobile-tab,.ms-btn,.l-back,.l-share{
+  background:linear-gradient(180deg,#241C14,#17100A) !important;
+  border:1px solid rgba(214,184,112,.4) !important;
+  color:#EAD8A6 !important;
+  box-shadow:inset 0 1px 0 rgba(214,184,112,.18), 0 3px 9px rgba(0,0,0,.4) !important;
+}
+
+/* ナビ・サイドバー：暗く沈めて金の細線 */
+.gnav{ background:var(--wood-dark) !important; border-bottom:1px solid rgba(214,184,112,.32) !important; box-shadow:0 2px 14px rgba(0,0,0,.5) !important; }
+.sidebar{ background:var(--wood-dark) !important; border-right:1px solid rgba(214,184,112,.22) !important; }
+.sb-item.on{ background:rgba(201,106,58,.16) !important; color:#E8C9A0 !important; border-left:none !important; box-shadow:inset 0 0 0 1px rgba(214,184,112,.3) !important; }
+#mobile-nav{ background:var(--wood-dark) !important; border-top:1px solid rgba(214,184,112,.3) !important; }
+
+/* カード・モーダル：暗い地＋金のヘアライン */
+.scard,.dash-card,.arch-stat,.auth-box,.arch-modal,.bsp{
+  background:linear-gradient(180deg,#1F1812,#15100B) !important;
+  border:1px solid rgba(214,184,112,.32) !important;
+  box-shadow:var(--bevel) !important;
+}
+
+/* アバター：金リングの肖像メダル */
+.ava,.gnav-ava,.pava{
+  border:2px solid #D6B870 !important;
+  background:linear-gradient(135deg,#C9A24A,#8A6526) !important;
+  box-shadow:inset 0 1px 2px rgba(255,240,200,.4), 0 2px 6px rgba(0,0,0,.4) !important;
+}
+
+/* ピル・バッジ：暗地＋金縁 / LIVEは赤銅 */
+.boostbadge,.connbadge,.prod-rank-badge,.fatigue-badge{
+  background:linear-gradient(180deg,#241C14,#15100A) !important;
+  border:1px solid rgba(214,184,112,.5) !important; color:#E6CD82 !important;
+  box-shadow:0 2px 6px rgba(0,0,0,.4) !important;
+}
+.plive-pill,.livebadge{
+  background:linear-gradient(180deg,#C96A3A,#9C3F24) !important;
+  border:1px solid rgba(247,226,170,.5) !important; box-shadow:0 2px 6px rgba(0,0,0,.4) !important;
+}
+
+/* 入力欄：アイボリー羊皮紙＋金の細線 */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,
+.form-inp,.form-sel,.cat-sel,#mb-trial,#mb-boost{
+  border:1px solid rgba(168,127,55,.5) !important;
+}
+
+/* クエスト盤：金の小粒鋲＋二重金罫 / 見出しは金文字に */
+#page-quest .dash-title{ background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; color:#E8CE86 !important; text-shadow:0 1px 2px rgba(0,0,0,.6) !important; }
+#page-quest .dash-card:has(> #quest-catalog){
+  border:none !important;
+  background:
+    radial-gradient(circle at 13px 13px,#E6CD82 0 2px,#8A6526 2px 3px,transparent 4px),
+    radial-gradient(circle at calc(100% - 13px) 13px,#E6CD82 0 2px,#8A6526 2px 3px,transparent 4px),
+    radial-gradient(circle at 13px calc(100% - 13px),#E6CD82 0 2px,#8A6526 2px 3px,transparent 4px),
+    radial-gradient(circle at calc(100% - 13px) calc(100% - 13px),#E6CD82 0 2px,#8A6526 2px 3px,transparent 4px),
+    linear-gradient(180deg,#1C150E,#120D08) !important;
+  box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),inset 0 0 0 5px rgba(10,7,4,.6),inset 0 0 0 6px rgba(214,184,112,.16),0 12px 26px rgba(0,0,0,.5) !important;
+}
+#page-quest .dash-card:has(> #quest-catalog) .dash-card-title{ background:none !important; border:none !important; box-shadow:none !important; color:#D6B870 !important; text-shadow:none !important; }
+#quest-catalog > div{ border:1px solid rgba(168,127,55,.45) !important; box-shadow:inset 0 0 0 1px rgba(255,250,230,.18),0 6px 14px rgba(0,0,0,.4) !important; }
+#quest-catalog > div::before{ width:11px !important; height:11px !important; background:radial-gradient(circle at 35% 30%,#F7EAD0 0 2px,#CAA24A 55%,#8A6526) !important; box-shadow:0 1px 2px rgba(0,0,0,.5) !important; }
+#quest-catalog > div > div:nth-child(3) > div:nth-child(1){ color:#A8511F !important; }
