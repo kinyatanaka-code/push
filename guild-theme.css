@@ -1,9 +1,10 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v9)
+   PUSH ギルドテーマ  guild-theme.css  (v10)
    ------------------------------------------------------------
-   v9: スマホのカメラ映像を縦型表示に（.smain を縦長枠＋cover）。
-   差し替えたら index.html の <link> を ?v=9 に上げてください。
-   v8: 実機のスマホ配信画面（.mobile-*／.live-top／#mobile-nav）。
+   v10: スマホ配信を全画面・没入レイアウトに。カメラを全画面の
+        縦動画にし、操作系を映像の上へフロート配置（モック準拠）。
+   差し替えたら index.html の <link> を ?v=10 に上げてください。
+   v9: スマホのカメラ映像を縦型に。 v8: 実機配信画面を着せ替え。
    v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
        各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
@@ -667,4 +668,43 @@ body::after{
   }
   /* 下のコントロール側はそのままスクロールで見せる */
   #sc-v .sside{ flex:1 !important; overflow-y:auto !important; min-height:0 !important; }
+}
+
+/* ============================================================
+   v10 — スマホ配信を全画面・没入レイアウトに（モック準拠）
+   #sc-v の縦積み（動画＋下に操作）を、
+   「カメラ全画面 ＋ 操作を映像の上にフロート」へCSSで再配置。
+   ※ v9 の .smain 60vh はこの画面では全画面化に置き換わる。
+   ============================================================ */
+@media(max-width:768px){
+  /* 重複ヘッダ（アバター行）は隠す：上部は .live-top に集約 */
+  #sc-v .sh{ display:none !important; }
+
+  /* 本体を全面に */
+  #sc-v .sbody{ position:absolute !important; inset:0 !important; height:100% !important; display:block !important; overflow:hidden !important; }
+
+  /* カメラ映像を全画面の縦動画として背面に */
+  #sc-v .smain{ position:absolute !important; inset:0 !important; height:100% !important; max-height:none !important; z-index:1 !important; }
+  #sc-v #remote-video, #sc-v #remote-video video,
+  #sc-v .smain video, #sc-v .smain .agora_video_player{
+    width:100% !important; height:100% !important; object-fit:cover !important;
+  }
+
+  /* 操作系を映像の上にフロート（下からスクリム） */
+  #sc-v .sside{ position:absolute !important; inset:0 !important; background:transparent !important; overflow:visible !important; z-index:3 !important; pointer-events:none !important; }
+  #mobile-viewer-ui{
+    position:absolute !important; left:0 !important; right:0 !important; bottom:0 !important;
+    display:flex !important; flex-direction:column !important; gap:7px !important;
+    padding:64px 12px 72px !important;   /* 下は下部ナビ(56px)を避ける */
+    background:linear-gradient(to top, rgba(0,0,0,.8) 52%, rgba(0,0,0,.35) 80%, transparent) !important;
+    pointer-events:auto !important;
+  }
+
+  /* タイトル＆ゴールは小さく */
+  .mobile-title-bar{ padding:0 2px !important; }
+  .mtb-name{ font-size:15px !important; color:#fff !important; text-shadow:0 1px 3px rgba(0,0,0,.7) !important; }
+  .mtb-goal{ font-size:11px !important; color:rgba(255,235,205,.9) !important; text-shadow:0 1px 3px rgba(0,0,0,.7) !important; }
+
+  /* チャットは映像の上に重なる半透明リスト（高さ控えめ） */
+  .mobile-chat-msgs{ max-height:24vh !important; overflow-y:auto !important; background:transparent !important; }
 }
