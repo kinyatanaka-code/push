@@ -1,9 +1,11 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v2)
+   PUSH ギルドテーマ  guild-theme.css  (v3)
    ------------------------------------------------------------
+   v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
+       各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
+   差し替えたら index.html の <link> を ?v=3 に上げてください。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
        クエスト一覧を羊皮紙の依頼札に
-   差し替えたら index.html の <link> を ?v=2 に上げてください。
    使い方: index.html の </head> の直前に1行だけ追加するだけ。
      <link rel="stylesheet" href="/guild-theme.css">
    ※ 既存の <style> より「後」に読み込むのが条件（上書きのため）。
@@ -258,3 +260,100 @@ body::after{
   box-shadow:var(--bevel-parch) !important; color:var(--ink) !important;
 }
 #quest-empty{ color:rgba(232,214,165,.7) !important; }
+
+/* ============================================================
+   v3 追加分 — 本格クエストボード
+   （参考画像：木枠＋四隅ボルト＋縦板に羊皮紙をピン留め）
+   ============================================================ */
+
+/* ── 18-a. 掲示板の本体（カタログを包むカード） ───── */
+#page-quest .dash-card:has(> #quest-catalog){
+  /* 四隅のボルト + 縦板 + 奥行き */
+  background:
+    radial-gradient(circle at 16px 16px, #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) 16px, #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at 16px calc(100% - 16px), #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    radial-gradient(circle at calc(100% - 16px) calc(100% - 16px), #e0b24a 0 3px, #8a6a1c 3px 5px, transparent 6px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, #5a3d20 0 38px, #4e3318 38px 76px),
+    linear-gradient(180deg, #5a3d20, #36230f) !important;
+  border:14px solid #3a2410 !important;
+  border-radius:8px !important;
+  box-shadow:
+    inset 0 0 0 2px #2a1a0d,
+    inset 0 0 46px rgba(0,0,0,.6),
+    6px 6px 0 rgba(0,0,0,.45) !important;
+  padding:24px 20px !important;
+}
+
+/* 板内の見出し（クエスト一覧 & EXP報酬）を彫り込み札に */
+#page-quest .dash-card:has(> #quest-catalog) .dash-card-title{
+  display:inline-block;
+  background:linear-gradient(180deg,#5a3d20,#3a2510);
+  border:2px solid #2a1a0d; border-radius:4px;
+  padding:6px 14px; margin-bottom:6px;
+  color:#e7c87a !important;
+  text-shadow:0 1px 0 rgba(255,220,150,.2), 0 -1px 0 rgba(0,0,0,.6);
+  box-shadow:var(--bevel);
+}
+
+/* ── 18-b. ページ見出し「クエストボード」を彫り板に ─ */
+#page-quest .dash-title{
+  display:inline-block;
+  background:linear-gradient(180deg,#5a3d20,#3a2510);
+  border:3px solid #2a1a0d; border-radius:5px;
+  padding:8px 20px;
+  color:#f0c84a !important;
+  text-shadow:0 2px 0 rgba(255,220,150,.18), 0 -2px 0 rgba(0,0,0,.65) !important;
+  box-shadow:var(--bevel);
+  letter-spacing:.08em;
+}
+
+/* ── 18-c. 依頼メモを横並び＆ピン留め＆斜め ──────── */
+#quest-catalog{
+  flex-direction:row !important;
+  flex-wrap:wrap !important;
+  gap:20px 16px !important;
+  align-items:flex-start !important;
+  padding:14px 6px 8px !important;
+  margin-top:6px !important;
+}
+#quest-catalog > div{
+  flex:1 1 240px !important;
+  max-width:320px;
+  position:relative !important;
+  padding:16px 14px 13px !important;
+  margin-top:8px !important;                 /* ピンのぶん上に余白 */
+  border:1px solid #c2a468 !important;
+  border-radius:2px !important;
+  box-shadow:
+    inset 0 0 22px rgba(150,110,50,.22),
+    2px 5px 9px rgba(0,0,0,.45) !important;  /* 板から浮かせる影 */
+  transition:transform .15s ease, box-shadow .15s ease !important;
+}
+/* 画鋲（赤いピン頭） */
+#quest-catalog > div::before{
+  content:''; position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+  width:14px; height:14px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #ffd98a 0 2px, #d23b1f 45%, #7c1d0e);
+  box-shadow:0 2px 4px rgba(0,0,0,.55), inset -1px -1px 2px rgba(0,0,0,.4);
+  z-index:3;
+}
+/* 紙ごとに少しずつ傾ける */
+#quest-catalog > div:nth-child(4n+1){ transform:rotate(-2deg); }
+#quest-catalog > div:nth-child(4n+2){ transform:rotate(1.5deg); }
+#quest-catalog > div:nth-child(4n+3){ transform:rotate(-1deg); }
+#quest-catalog > div:nth-child(4n){   transform:rotate(2.2deg); }
+/* ホバーで真っ直ぐ＆持ち上げ */
+#quest-catalog > div:hover{
+  transform:rotate(0deg) translateY(-4px) scale(1.02) !important;
+  box-shadow:
+    inset 0 0 22px rgba(150,110,50,.22),
+    5px 10px 16px rgba(0,0,0,.55) !important;
+  z-index:4;
+}
+
+/* スマホでは1列に畳む */
+@media (max-width:560px){
+  #quest-catalog > div{ flex-basis:100%; max-width:none; }
+}
