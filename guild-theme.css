@@ -1,6 +1,9 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v1)
+   PUSH ギルドテーマ  guild-theme.css  (v2)
    ------------------------------------------------------------
+   v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
+       クエスト一覧を羊皮紙の依頼札に
+   差し替えたら index.html の <link> を ?v=2 に上げてください。
    使い方: index.html の </head> の直前に1行だけ追加するだけ。
      <link rel="stylesheet" href="/guild-theme.css">
    ※ 既存の <style> より「後」に読み込むのが条件（上書きのため）。
@@ -59,14 +62,19 @@
 *{ font-family:'DotGothic16','Noto Sans JP',sans-serif !important; }
 body{ image-rendering:pixelated; }
 
-/* ロゴ "PUSH" はラテン語なので Press Start 2P がハマる */
+/* ロゴ "PUSH" はラテン語なので Press Start 2P がハマる
+   ※ 旧版は background→text 切り抜きで「オレンジの箱＋透明文字」になり消えていた。
+     塗りを消して真鍮色のベタ文字にして確実に表示する。 */
 .gnav-logo,.auth-logo{
   font-family:'Press Start 2P',monospace !important;
-  background:linear-gradient(135deg,#F0C84A,#E8642A) !important;
-  -webkit-background-clip:text; background-clip:text; color:transparent !important;
-  filter:drop-shadow(2px 2px 0 rgba(0,0,0,.5));
+  background:none !important;
+  -webkit-background-clip:border-box !important; background-clip:border-box !important;
+  -webkit-text-fill-color:#F4C752 !important;   /* 透明文字を強制解除（これが効く） */
+  color:#F4C752 !important;
+  text-shadow:2px 2px 0 rgba(0,0,0,.55);
+  filter:none !important;
 }
-.auth-logo{ font-size:34px !important; line-height:1.4; }
+.auth-logo{ font-size:32px !important; line-height:1.5; }
 .gnav-logo{ font-size:16px !important; }
 /* 数字・LIVEピルなど短いラテンはドットフォントで */
 .plive-pill,.pviewers,.pboost,.cat-count{ font-family:'Press Start 2P',monospace !important; }
@@ -208,3 +216,45 @@ body::after{
 @media (prefers-reduced-motion: reduce){
   *{ animation:none !important; transition:none !important; }
 }
+
+/* ============================================================
+   v2 追加分
+   ============================================================ */
+
+/* ── 16. 文字コントラスト改善（薄い紫 → 暖色） ───── */
+.auth-sub{ color:#E0C58E !important; }
+.auth-tab{ color:rgba(240,222,180,.7) !important; }      /* 非選択タブ（新規登録 等） */
+.aflbl,.form-lbl{ color:#E3C896 !important; }             /* 入力ラベル */
+.dash-title{ color:#F0C84A !important; text-shadow:2px 2px 0 rgba(0,0,0,.5); }
+.dash-sub{ color:rgba(232,214,165,.75) !important; }
+.dash-card-title{ color:#F0C84A !important; }
+/* マイページ等の薄い紫の見出し・本文も底上げ */
+.mp-name,#mp-name{ color:#F2E6C2 !important; }
+#mp-email{ color:rgba(224,200,150,.6) !important; }
+
+/* ── 17. クエスト一覧 = 羊皮紙の依頼札 ───────────── */
+/* 木の掲示板（dash-card）に貼られた紙、というギルドらしい見せ方 */
+#quest-catalog > div{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important;
+  border-radius:3px !important;
+  box-shadow:var(--bevel-parch) !important;
+}
+/* 中央テキスト列 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(1){ color:var(--ink) !important; }    /* クエスト名 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(2){ color:#7A5A2A !important; }        /* 説明 */
+#quest-catalog > div > div:nth-child(2) > div:nth-child(3){ color:#A8842C !important; }        /* ★難易度 */
+/* 右側の報酬 */
+#quest-catalog > div > div:nth-child(3) > div:nth-child(1){            /* +XP（マゼンタ→残り火色） */
+  color:#B8341A !important; text-shadow:none !important;
+  font-family:'Press Start 2P',monospace !important; font-size:11px !important;
+}
+#quest-catalog > div > div:nth-child(3) > div:nth-child(2){ color:#9A6B1C !important; }        /* ブースト */
+
+/* 参戦中のライブクエスト行も同じ紙に（構造不明なので色は安全側で） */
+#quest-live-list > div{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important; border-radius:3px !important;
+  box-shadow:var(--bevel-parch) !important; color:var(--ink) !important;
+}
+#quest-empty{ color:rgba(232,214,165,.7) !important; }
