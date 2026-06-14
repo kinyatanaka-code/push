@@ -1,9 +1,10 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v3)
+   PUSH ギルドテーマ  guild-theme.css  (v4)
    ------------------------------------------------------------
+   v4: 紙の材質を古紙に（繊維ノイズ＋シミ＋縁の焼け＋黄ばみ）。
+   差し替えたら index.html の <link> を ?v=4 に上げてください。
    v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
        各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
-   差し替えたら index.html の <link> を ?v=3 に上げてください。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
        クエスト一覧を羊皮紙の依頼札に
    使い方: index.html の </head> の直前に1行だけ追加するだけ。
@@ -51,13 +52,22 @@
   --wood-dark:
     repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 4px),
     linear-gradient(180deg, #2A1A0D, #1A1108);
+  /* 紙の繊維ノイズ（茶色い斑点をアルファで散らす・ネット不要のSVG） */
+  --paper-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.42 0 0 0 0 0.27 0 0 0 0 0.11 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  /* 古紙：ノイズ＋茶のシミ(foxing)＋四隅の焼け＋黄ばんだ不均一な下地 */
   --parch:
-    radial-gradient(ellipse at 18% 12%, rgba(120,80,30,.16), transparent 50%),
-    radial-gradient(ellipse at 82% 88%, rgba(110,75,35,.18), transparent 55%),
-    linear-gradient(180deg, #ECD8AA, #E1C898);
+    var(--paper-noise),
+    radial-gradient(circle at 22% 28%, rgba(110,68,24,.18) 0 4px, transparent 6px),
+    radial-gradient(circle at 71% 19%, rgba(120,74,28,.15) 0 3px, transparent 5px),
+    radial-gradient(circle at 84% 63%, rgba(96,58,20,.18) 0 5px, transparent 7px),
+    radial-gradient(circle at 37% 79%, rgba(118,78,33,.15) 0 4px, transparent 6px),
+    radial-gradient(ellipse at 14% 10%, rgba(108,66,24,.30), transparent 42%),
+    radial-gradient(ellipse at 88% 88%, rgba(92,56,20,.32), transparent 46%),
+    radial-gradient(ellipse at 50% 50%, rgba(120,72,30,0) 60%, rgba(96,58,22,.22) 100%),
+    linear-gradient(158deg, #dcc085 0%, #d1b36f 48%, #c2a05b 100%);
   --bevel: inset 2px 2px 0 rgba(255,200,140,.28), inset -2px -2px 0 rgba(0,0,0,.5), 4px 4px 0 rgba(0,0,0,.45);
-  --bevel-parch: inset 2px 2px 0 rgba(255,250,230,.5), inset -2px -2px 0 rgba(120,90,40,.55), 2px 2px 0 rgba(0,0,0,.35);
-  --ink:#3A2410;
+  --bevel-parch: inset 1px 1px 0 rgba(240,224,180,.3), inset -2px -2px 0 rgba(110,80,38,.6), 2px 2px 0 rgba(0,0,0,.35);
+  --ink:#33230F;
 }
 
 /* ── 2. フォント：ドット絵化 ─────────────────────── */
@@ -356,4 +366,31 @@ body::after{
 /* スマホでは1列に畳む */
 @media (max-width:560px){
   #quest-catalog > div{ flex-basis:100%; max-width:none; }
+}
+
+/* ============================================================
+   v4 追加分 — 古紙の縁の焼け・手擦れ
+   ============================================================ */
+/* 依頼メモ：縁を濃く焼けさせ、紙の角を古びた茶に */
+#quest-catalog > div{
+  border:1px solid #b0904f !important;
+  border-radius:2px !important;
+  box-shadow:
+    inset 0 0 18px rgba(120,78,30,.30),     /* 内側の焼け */
+    inset 0 0 40px rgba(150,110,55,.12),
+    2px 5px 9px rgba(0,0,0,.45) !important;  /* 板から浮かせる影 */
+}
+/* ホバー時も古紙の焼けを維持 */
+#quest-catalog > div:hover{
+  box-shadow:
+    inset 0 0 18px rgba(120,78,30,.30),
+    inset 0 0 40px rgba(150,110,55,.12),
+    5px 10px 16px rgba(0,0,0,.55) !important;
+}
+/* 入力欄やモーダルの紙も同じ古紙なので、内側の焼けを軽く足す */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,.arch-body{
+  box-shadow:
+    inset 1px 1px 0 rgba(240,224,180,.3),
+    inset 0 0 14px rgba(120,78,30,.18),
+    inset -2px -2px 0 rgba(110,80,38,.5) !important;
 }
