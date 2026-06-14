@@ -1,0 +1,210 @@
+/* ============================================================
+   PUSH ギルドテーマ  guild-theme.css  (v1)
+   ------------------------------------------------------------
+   使い方: index.html の </head> の直前に1行だけ追加するだけ。
+     <link rel="stylesheet" href="/guild-theme.css">
+   ※ 既存の <style> より「後」に読み込むのが条件（上書きのため）。
+   このファイルを index.html と同じ階層に置けば
+   express.static でそのまま配信されます。
+
+   やっていること:
+   1. :root のカラー変数を木目・羊皮紙・松明色へ総入れ替え
+   2. フォントをドット系（DotGothic16 / Press Start 2P）へ
+   3. ナビ/サイドバー/カード/ボタン/入力/アバター等を木札・羊皮紙化
+   見た目だけの着せ替えです。文言（配信→探索 等）は別途HTML/JS側で。
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Press+Start+2P&display=swap');
+
+/* ── 1. パレット差し替え ───────────────────────── */
+:root{
+  /* アクセント：松明の炎 */
+  --o:#E8642A; --o2:#FF7A3C;
+  --g:#6F8F3A;            /* 成功＝苔緑 */
+  --r:#B8341A;            /* 危険＝残り火 */
+  --b:#3C7FA6;            /* ランタン青（控えめ） */
+  /* 金属：金貨の真鍮 */
+  --gold:#E0B24A; --gold2:#C8941F; --silver:#B8A888; --bronze:#A86A3A;
+  /* 紫アクセント → 古び金へ寄せて全体を暖色に */
+  --purple:#C8A05A; --cyan:#9FB87A;
+  /* 背景：焦げ樫 */
+  --bg:#1A130B; --surf:#2A1A0D; --card:#33240F; --card2:#3F2D16;
+  --border:rgba(120,90,40,.35); --border2:rgba(180,140,80,.45);
+  /* 文字：羊皮紙 */
+  --text:#F0E0BC; --muted:rgba(220,200,150,.5);
+  --sh:4px 4px 0 rgba(0,0,0,.5);
+  /* グロー */
+  --glow-o:0 0 18px rgba(232,100,42,.4);
+  --glow-gold:0 0 18px rgba(224,178,74,.4);
+  --glow-purple:0 0 16px rgba(200,160,90,.3);
+
+  /* 質感トークン（このテーマ専用） */
+  --wood:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, #4A2F18 0 13px, #3A2410 13px 26px),
+    linear-gradient(180deg, #4A2F18, #2A1A0D);
+  --wood-dark:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #2A1A0D, #1A1108);
+  --parch:
+    radial-gradient(ellipse at 18% 12%, rgba(120,80,30,.16), transparent 50%),
+    radial-gradient(ellipse at 82% 88%, rgba(110,75,35,.18), transparent 55%),
+    linear-gradient(180deg, #ECD8AA, #E1C898);
+  --bevel: inset 2px 2px 0 rgba(255,200,140,.28), inset -2px -2px 0 rgba(0,0,0,.5), 4px 4px 0 rgba(0,0,0,.45);
+  --bevel-parch: inset 2px 2px 0 rgba(255,250,230,.5), inset -2px -2px 0 rgba(120,90,40,.55), 2px 2px 0 rgba(0,0,0,.35);
+  --ink:#3A2410;
+}
+
+/* ── 2. フォント：ドット絵化 ─────────────────────── */
+*{ font-family:'DotGothic16','Noto Sans JP',sans-serif !important; }
+body{ image-rendering:pixelated; }
+
+/* ロゴ "PUSH" はラテン語なので Press Start 2P がハマる */
+.gnav-logo,.auth-logo{
+  font-family:'Press Start 2P',monospace !important;
+  background:linear-gradient(135deg,#F0C84A,#E8642A) !important;
+  -webkit-background-clip:text; background-clip:text; color:transparent !important;
+  filter:drop-shadow(2px 2px 0 rgba(0,0,0,.5));
+}
+.auth-logo{ font-size:34px !important; line-height:1.4; }
+.gnav-logo{ font-size:16px !important; }
+/* 数字・LIVEピルなど短いラテンはドットフォントで */
+.plive-pill,.pviewers,.pboost,.cat-count{ font-family:'Press Start 2P',monospace !important; }
+.plive-pill{ font-size:8px !important; }
+.pviewers,.cat-count{ font-size:9px !important; }
+.pboost{ font-size:10px !important; }
+
+/* ── 3. 背景：ギルドホール ───────────────────────── */
+body::before{
+  background:
+    radial-gradient(ellipse at 12% 80%, rgba(232,100,42,.10), transparent 45%),
+    radial-gradient(ellipse at 88% 75%, rgba(232,100,42,.08), transparent 45%),
+    radial-gradient(ellipse at 50% 50%, #1f160c 0%, #120c06 100%) !important;
+}
+/* 石床ドットグリッドの薄いオーバーレイ */
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.10;
+  background-image:
+    linear-gradient(rgba(107,68,35,.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107,68,35,.6) 1px, transparent 1px);
+  background-size:26px 26px;
+}
+
+/* ── 4. ナビ / サイドバー：木の梁 ─────────────────── */
+.gnav{
+  background:var(--wood) !important;
+  border-bottom:3px solid #2A1A0D !important;
+  box-shadow:0 4px 0 rgba(0,0,0,.4), inset 0 2px 0 rgba(255,200,140,.15) !important;
+}
+.sidebar{
+  background:var(--wood-dark) !important;
+  border-right:3px solid #2A1A0D !important;
+}
+.sb-item.on{
+  background:rgba(232,100,42,.16) !important;
+  color:#FFB070 !important; border-left:3px solid var(--o) !important;
+  text-shadow:0 0 8px rgba(232,100,42,.4);
+}
+.sb-item:hover{ background:rgba(232,100,42,.10) !important; color:#FFB070 !important; }
+.sb-lbl{ color:rgba(224,178,74,.55) !important; }
+
+/* ── 5. 認証画面：木箱＋松明 ──────────────────────── */
+.auth-page{ background:linear-gradient(160deg,#1f160c,#2a1a0d 50%,#120c06) !important; }
+.auth-box{
+  background:var(--wood) !important;
+  border:3px solid #2A1A0D !important; border-radius:6px !important;
+  box-shadow:var(--bevel), 0 0 60px rgba(232,100,42,.12) !important;
+}
+.auth-box::after{ background:linear-gradient(90deg,transparent,rgba(224,178,74,.6),transparent) !important; }
+.auth-tab.on{ background:linear-gradient(180deg,var(--o),#C44A18) !important; box-shadow:var(--bevel) !important; }
+
+/* ── 6. カード類：木の依頼札 ─────────────────────── */
+.scard,.dash-card,.arch-stat{
+  background:var(--wood) !important;
+  border:2px solid #2A1A0D !important; border-radius:4px !important;
+  box-shadow:var(--bevel) !important;
+}
+.scard-thumb{ background:#160f07 !important; }
+
+/* ── 7. ボタン：彫り込みの木札（炎色） ───────────── */
+.asbmt,.gnav-live,.chatsbtn,.abtn,.arch-close-btn{
+  background:linear-gradient(180deg,var(--o),#C44A18) !important;
+  border:none !important; border-radius:4px !important; color:#FFF8EF !important;
+  box-shadow:var(--bevel) !important; letter-spacing:.04em;
+}
+.asbmt:hover,.gnav-live:hover{ transform:translate(-1px,-1px); filter:brightness(1.06); }
+/* 依頼（旧ボム）ボタン：紫→炎 */
+.bomb-btn{
+  background:rgba(232,100,42,.14) !important;
+  border:2px solid rgba(232,100,42,.45) !important; border-radius:4px !important;
+  color:#FFB892 !important; box-shadow:inset -2px -2px 0 rgba(0,0,0,.35) !important;
+}
+.bomb-btn:hover{ background:rgba(232,100,42,.22) !important; }
+
+/* ── 8. 入力欄：羊皮紙の記入欄 ───────────────────── */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,.cat-sel,.form-sel{
+  background:var(--parch) !important;
+  border:2px solid #B89A60 !important; border-radius:3px !important;
+  color:var(--ink) !important; box-shadow:var(--bevel-parch) !important;
+}
+.ainp::placeholder,.chatinp::placeholder,.gnav-search input::placeholder,.cat-search-inp::placeholder{
+  color:rgba(90,65,30,.55) !important;
+}
+
+/* ── 9. アバター：角型の真鍮メダル ───────────────── */
+.ava,.gnav-ava,.pava{
+  border-radius:3px !important;
+  background:linear-gradient(135deg,#E0B24A,#A86A3A) !important;
+  box-shadow:inset 2px 2px 0 rgba(255,240,200,.45), 2px 2px 0 rgba(0,0,0,.4) !important;
+  border:none !important;
+}
+
+/* ── 10. ピル・バッジ：木の看板 ──────────────────── */
+.plive-pill{
+  background:linear-gradient(180deg,var(--r),#8C1F10) !important;
+  border-radius:3px !important; box-shadow:var(--bevel) !important;
+}
+.boostbadge,.connbadge,.prod-rank-badge,.fatigue-badge{
+  background:linear-gradient(180deg,#5A3A1E,#2A1A0D) !important;
+  border:2px solid rgba(224,178,74,.4) !important; border-radius:3px !important;
+  color:var(--gold) !important; box-shadow:var(--bevel) !important;
+}
+
+/* ── 11. チャット / ギフトバー：酒場の板 ─────────── */
+.chathd,.chatin,.giftbar{
+  background:var(--wood-dark) !important;
+  border-color:#2A1A0D !important;
+}
+.cmsg{ color:#E6D2A0 !important; }
+.cmsg.gift{ color:var(--gold) !important; }
+.cmsg.bomb{ color:#FFB892 !important; }
+.cmsg.sys{ color:rgba(224,178,74,.6) !important; }
+
+/* ── 12. 進捗バー：探索ゲージ ─────────────────────── */
+.boss-hp-bar,.fatigue-bar,.arch-result-bar{
+  background:#160f07 !important;
+  border:2px solid #2A1A0D !important; border-radius:3px !important;
+}
+.boss-hp-fill,.arch-vbar-yes{
+  background:linear-gradient(90deg,var(--o),#F0C84A) !important; border-radius:0 !important;
+}
+.fatigue-bar-fill.ok{ background:var(--g) !important; }
+.fatigue-bar-fill.warn{ background:var(--gold2) !important; }
+.fatigue-bar-fill.danger{ background:var(--r) !important; }
+
+/* ── 13. モーダル：開いた羊皮紙の巻物 ─────────────── */
+.arch-modal,.bsp{
+  background:var(--wood) !important;
+  border:3px solid #2A1A0D !important; border-radius:6px !important;
+  box-shadow:var(--bevel), 0 0 50px rgba(0,0,0,.6) !important;
+}
+.arch-body{ background:var(--parch) !important; color:var(--ink) !important; border-radius:3px; }
+.arch-body .arch-stat-lbl{ color:#6E4F24 !important; }
+
+/* ── 14. 角を全体的に削ってドットらしく ───────────── */
+.gnav-btn,.gnav-search input,.auth-tab,.sb-item,.cat-search-inp{ border-radius:3px !important; }
+
+/* ── 15. モーション配慮 ──────────────────────────── */
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none !important; transition:none !important; }
+}
