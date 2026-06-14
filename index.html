@@ -3387,13 +3387,16 @@ init();
     setTimeout(()=>{ el.style.opacity='0'; el.style.top='22%'; },1300);
     setTimeout(()=>el.remove(),2000);
   }
-  async function chargeSuccess(){
+  async function chargeSuccess(sid){
     const pend=parseInt(localStorage.getItem('push_pending_coins')||'0')||0;
     const before=parseInt(localStorage.getItem('push_coins_before')||'0')||0;
     localStorage.removeItem('push_pending_coins'); localStorage.removeItem('push_coins_before');
-    // Webhook反映を最大~7秒待つ
-    let coins=before, tries=0;
-    while(tries<7){ const c=await fetchCoins(); if(c!=null){ coins=c; if(c>=before+pend)break; } await new Promise(r=>setTimeout(r,1000)); tries++; }
+    // サーバーがStripeへ直接照会して加算（Webhook不要のフォールバック）
+    let coins=before;
+    if(sid){ try{ const r=await fetch('/api/checkout/confirm?sid='+encodeURIComponent(sid),{headers:{Authorization:'Bearer '+TOKEN()}}); const d=await r.json(); if(typeof d.coins==='number') coins=d.coins; }catch(e){} }
+    // 反映が遅れても拾えるよう数回ポーリング
+    let tries=0;
+    while(coins<before+pend && tries<5){ const c=await fetchCoins(); if(c!=null) coins=c; if(coins>=before+pend)break; await new Promise(r=>setTimeout(r,1000)); tries++; }
     document.querySelectorAll('.coin-balance-val').forEach(el=>{ el.textContent=fmt(before); countUp(el,coins,1200); });
     const cb=document.getElementById('charge-balance'); if(cb){ cb.textContent=fmt(before); countUp(cb,coins,1200); }
     if(pend>0) floatGain(pend);
@@ -3404,7 +3407,7 @@ init();
   document.addEventListener('click',e=>{ if(e.target&&e.target.id==='charge-modal') closeCharge(); });
   window.addEventListener('DOMContentLoaded',()=>{
     const q=new URLSearchParams(location.search);
-    if(q.get('charge')==='success'){ try{history.replaceState({},'','/');}catch(e){} setTimeout(chargeSuccess,500); }
+    if(q.get('charge')==='success'){ const sid=q.get('sid'); try{history.replaceState({},'','/');}catch(e){} setTimeout(()=>chargeSuccess(sid),400); }
     setTimeout(()=>{
       // 上部ナビに「メダル残高＋」ピル
       const nav=document.querySelector('.gnav');

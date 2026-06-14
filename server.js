@@ -492,11 +492,31 @@ app.post('/api/checkout/create-session', async (req, res) => {
         quantity: 1,
       }],
       metadata: { userId: s.userId, email: s.email, coins: String(pack.coins), pack: req.body.pack },
-      success_url: `${origin}/?charge=success`,
+      success_url: `${origin}/?charge=success&sid={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/?charge=cancel`,
     });
     res.json({ url: session.url });
   } catch(e) { console.error('create-session:', e.message); res.status(500).json({ error: e.message }); }
+});
+
+// ── チャージ確認（戻り時にサーバーがStripeへ直接照会して加算。Webhook不要のフォールバック）──
+app.get('/api/checkout/confirm', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error:'決済が未設定です' });
+    const tok = (req.headers.authorization||'').replace('Bearer ','');
+    const s = sessions.get(tok);
+    if (!s) return res.status(401).json({ error:'未ログイン' });
+    const sid = req.query.sid;
+    if (!sid) return res.status(400).json({ error:'sidが必要です' });
+    const cs = await stripe.checkout.sessions.retrieve(sid);
+    const md = (cs && cs.metadata) || {};
+    // 支払い完了 & 本人の決済のときだけ加算（refで冪等＝webhookと二重加算しない）
+    if (cs && cs.payment_status === 'paid' && md.userId && md.userId === s.userId) {
+      const coins = parseInt(md.coins || '0', 10);
+      if (coins > 0) await addCoins(s.userId, s.email, coins, 'stripe:' + cs.id);
+    }
+    res.json({ ok: cs ? cs.payment_status === 'paid' : false, coins: await getCoins(s.userId, s.email) });
+  } catch(e) { console.error('confirm:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 // ── 配信一覧 ──
