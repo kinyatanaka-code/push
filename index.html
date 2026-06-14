@@ -782,7 +782,7 @@ body>*{position:relative;z-index:1;}
 .ms-task-donelbl{color:#10b981;font-size:11px;}
 .ms-insight-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border-radius:12px;padding:11px 14px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;}
 </style>
-<link rel="stylesheet" href="/guild-theme.css?v=1">
+<link rel="stylesheet" href="/guild-theme.css?v=10">
 </head>
 <body>
 
@@ -1298,32 +1298,63 @@ body>*{position:relative;z-index:1;}
         </div>
         <div class="sside" id="sside-v">
           <!-- ★ スマホ専用：タイトル＋PUSHボタン＋タブ -->
+          <!-- ★ 没入レイアウト用スタイル（このブロック自己完結） -->
+          <style>
+          @media(max-width:768px){
+            #sc-v{position:relative !important;}
+            #sc-v .sh{display:none !important;}
+            #sc-v .sbody{position:absolute !important;inset:0 !important;height:100% !important;display:block !important;overflow:hidden !important;}
+            #sc-v .smain{position:absolute !important;inset:0 !important;height:100% !important;max-height:none !important;z-index:1 !important;}
+            #sc-v #remote-video,#sc-v #remote-video video,#sc-v .smain video,#sc-v .smain .agora_video_player{width:100% !important;height:100% !important;object-fit:cover !important;}
+            #sc-v .sside{position:absolute !important;inset:0 !important;background:transparent !important;overflow:visible !important;z-index:3 !important;pointer-events:none !important;}
+            #mobile-viewer-ui{position:absolute !important;inset:0 !important;pointer-events:none !important;}
+            .mvi-goaltag{position:absolute;top:8px;right:12px;max-width:64%;text-align:right;pointer-events:auto;background:rgba(40,26,13,.5);border:1px solid rgba(224,178,74,.5);border-radius:14px;padding:4px 12px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);z-index:4;}
+            .mvi-name{font-size:12px;font-weight:700;color:#f4c752;}
+            .mvi-goal{font-size:11px;color:#f0e0bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            .mvi-side{position:absolute;right:12px;top:46%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;pointer-events:auto;z-index:4;}
+            .mvi-medal{-webkit-appearance:none;appearance:none;width:58px;border-radius:28px;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;color:#f4e3b0;background:radial-gradient(circle at 36% 26%,#7c5331,#4a2f18 70%);border:2px solid #caa34a;box-shadow:inset 0 2px 3px rgba(255,210,150,.35),inset 0 -3px 6px rgba(0,0,0,.5),0 3px 7px rgba(0,0,0,.45);}
+            .mvi-medal.bomb{background:radial-gradient(circle at 36% 26%,#ff8a4a,#c4401a 72%);border-color:#ffcf6a;color:#fff3e0;}
+            .mvi-medal.on{outline:2px solid #ffd98a;outline-offset:1px;}
+            .mvi-ic{font-size:22px;line-height:1;}
+            .mvi-lb{font-size:9px;color:#ead6a6;}
+            .mvi-medal.bomb .mvi-lb{color:#ffe7d6;}
+            .mvi-dock{position:absolute;left:0;right:0;bottom:0;pointer-events:auto;display:flex;flex-direction:column;gap:8px;padding:50px 12px calc(env(safe-area-inset-bottom,0px) + 70px);background:linear-gradient(to top,rgba(0,0,0,.82) 50%,rgba(0,0,0,.3) 82%,transparent);z-index:4;}
+            .mvi-gifts{display:flex;gap:7px;flex-wrap:wrap;}
+            #mobile-viewer-ui .mobile-amt-btn{-webkit-appearance:none;appearance:none;background:radial-gradient(circle at 40% 25%,#7c5331,#4a2f18 72%);border:2px solid #caa34a;border-radius:18px;color:#f4e3b0;font-weight:700;font-size:12px;padding:6px 13px;cursor:pointer;font-family:'DotGothic16',monospace;box-shadow:inset 0 1px 2px rgba(255,210,150,.3),0 2px 4px rgba(0,0,0,.4);}
+            #mobile-viewer-ui .mobile-amt-btn.sel{background:linear-gradient(180deg,#ff8a4a,#c4401a);border-color:#ffcf6a;color:#fff8ef;}
+            #mobile-viewer-ui .mobile-chat-msgs{max-height:22vh;overflow-y:auto;display:flex;flex-direction:column;gap:5px;}
+            .mvi-dock .mobile-chat-inp{display:flex;gap:9px;align-items:center;}
+            .mvi-dock .mobile-chat-inp input{-webkit-appearance:none;appearance:none;flex:1;background:linear-gradient(158deg,#dcc085,#c2a05b);border:2px solid #b0904f;border-radius:20px;padding:10px 14px;color:#33230f;font-size:13px;outline:none;font-family:'DotGothic16',monospace;}
+            .mvi-dock .mobile-chat-inp input::placeholder{color:rgba(90,65,30,.55);}
+            .mvi-dock .mobile-chat-inp button{-webkit-appearance:none;appearance:none;background:radial-gradient(circle at 36% 26%,#ff8a4a,#c4401a 72%);border:2px solid #ffcf6a;border-radius:50%;width:44px;height:44px;color:#fff8ef;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0;font-family:'DotGothic16',monospace;box-shadow:inset 0 2px 2px rgba(255,225,180,.4),0 2px 4px rgba(0,0,0,.45);}
+            .mvi-bomb-ttl{font-size:12px;font-weight:700;color:#e9d3a0;margin-bottom:8px;}
+            #mb-trial,#mb-boost{width:100%;background:linear-gradient(158deg,#dcc085,#c2a05b);border:2px solid #b0904f;border-radius:14px;padding:10px;color:#33230f;font-size:13px;outline:none;resize:none;font-family:'DotGothic16',monospace;}
+            #mb-boost{margin-top:8px;}
+            .mvi-bomb-send{-webkit-appearance:none;appearance:none;width:100%;margin-top:10px;background:linear-gradient(180deg,#ff8a4a,#c4401a);border:2px solid #ffcf6a;border-radius:22px;color:#fff8ef;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DotGothic16',monospace;box-shadow:inset 0 2px 3px rgba(255,225,180,.5),0 3px 7px rgba(0,0,0,.4);}
+          }
+          </style>
+          <!-- ★ スマホ配信：全画面・没入レイアウト（ハンドラ/IDは従来通り） -->
           <div id="mobile-viewer-ui" style="display:none;flex-direction:column;flex:1;">
-            <!-- タイトルバー -->
-            <div class="mobile-title-bar">
-              <div class="mtb-name" id="mv-name">配信者名</div>
-              <div class="mtb-goal" id="mv-goal">目標</div>
+            <!-- 右上：ゴール宣言タグ -->
+            <div class="mvi-goaltag">
+              <div class="mvi-name" id="mv-name">配信者名</div>
+              <div class="mvi-goal" id="mv-goal">目標</div>
             </div>
-            <!-- PUSHボタン -->
-            <div class="mobile-push-bar">
-              <div class="mobile-amt-row">
+            <!-- 右側：丸メダル（PUSH / 試練 / コメント） -->
+            <div class="mvi-side">
+              <button class="mvi-medal" onclick="onPush()"><span class="mvi-ic">&#128170;</span><span class="mvi-lb">PUSH</span></button>
+              <button class="mvi-medal bomb" id="mtab-bomb" onclick="switchMobileTab('bomb')"><span class="mvi-ic">&#128163;</span><span class="mvi-lb">試練</span></button>
+              <button class="mvi-medal" id="mtab-chat" onclick="switchMobileTab('chat')"><span class="mvi-ic">&#128172;</span><span class="mvi-lb">コメント</span></button>
+            </div>
+            <!-- 下部：フロート操作ドック -->
+            <div class="mvi-dock">
+              <!-- 金額選択 -->
+              <div class="mvi-gifts">
                 <button class="mobile-amt-btn" onclick="mSelAmt(100,this)">¥100</button>
                 <button class="mobile-amt-btn sel" onclick="mSelAmt(500,this)">¥500</button>
                 <button class="mobile-amt-btn" onclick="mSelAmt(1000,this)">¥1K</button>
                 <button class="mobile-amt-btn" onclick="mSelAmt(5000,this)">¥5K</button>
               </div>
-              <button class="mobile-push-btn" onclick="onPush()">
-                <span style="font-size:13px;font-weight:900;">PUSH</span>
-                <span style="font-size:8px;opacity:.8;">タップ</span>
-              </button>
-            </div>
-            <!-- コメント/タスクタブ -->
-            <div class="mobile-tabs">
-              <button class="mobile-tab on" id="mtab-chat" onclick="switchMobileTab('chat')">💬 コメント</button>
-              <button class="mobile-tab" id="mtab-bomb" onclick="switchMobileTab('bomb')">💣 ボム</button>
-            </div>
-            <!-- タブ内容 -->
-            <div class="mobile-tab-content">
               <!-- コメントタブ -->
               <div id="mtab-chat-content">
                 <div class="mobile-chat-msgs" id="mobile-chat-msgs"></div>
@@ -1335,16 +1366,15 @@ body>*{position:relative;z-index:1;}
               <!-- ボムタブ -->
               <div id="mtab-bomb-content" style="display:none;">
                 <div class="mobile-bomb-form">
-                  <div style="font-size:12px;font-weight:700;color:rgba(200,180,255,.8);margin-bottom:8px;">💣 試練を投下する</div>
-                  <textarea id="mb-trial" placeholder="例：腕立て50回、15分延長..." rows="3"
-                    style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:10px;color:#F0EEFF;font-size:13px;resize:none;outline:none;font-family:'Noto Sans JP',sans-serif;"></textarea>
-                  <select id="mb-boost" style="width:100%;margin-top:8px;background:rgba(255,255,255,.06);border:1px solid rgba(180,130,255,.2);border-radius:8px;padding:8px;color:#F0EEFF;font-size:13px;">
+                  <div class="mvi-bomb-ttl">💣 試練を投下する</div>
+                  <textarea id="mb-trial" placeholder="例：腕立て50回、15分延長..." rows="2"></textarea>
+                  <select id="mb-boost">
                     <option value="5">ブースト +5%</option>
                     <option value="10">ブースト +10%</option>
                     <option value="20">ブースト +20%</option>
                     <option value="50">ブースト +50%</option>
                   </select>
-                  <button onclick="sendMobileBomb()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#7B1FA2,#E040FB);border:none;color:#fff;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;">💣 投下する！</button>
+                  <button class="mvi-bomb-send" onclick="sendMobileBomb()">💣 投下する！</button>
                 </div>
               </div>
             </div>
