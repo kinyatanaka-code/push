@@ -12,11 +12,14 @@ const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SEC
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 // 購入できるコインパック（価格はサーバー側で確定＝改ざん防止）
 const COIN_PACKS = {
-  p120:  { coins:120,  jpy:120,  label:'120 コイン' },
-  p550:  { coins:550,  jpy:500,  label:'550 コイン（+10%）' },
-  p1200: { coins:1200, jpy:1000, label:'1,200 コイン（+20%）' },
-  p3800: { coins:3800, jpy:3000, label:'3,800 コイン（+27%）' },
+  p120:  { coins:120,  jpy:120,  label:'120 メダル' },
+  p550:  { coins:550,  jpy:500,  label:'550 メダル（+10%）' },
+  p1200: { coins:1200, jpy:1000, label:'1,200 メダル（+20%）' },
+  p3800: { coins:3800, jpy:3000, label:'3,800 メダル（+27%）' },
 };
+
+// 管理者のメール（このアカウントだけ管理画面に入れる）
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
 
 // ── クラッシュ防止 ──
 process.on('uncaughtException',  e => console.error('[uncaughtException]', e));
@@ -134,6 +137,10 @@ async function initDB() {
         amount INTEGER,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id TEXT PRIMARY KEY,
+        data JSONB
+      );
     `);
     console.log('✅ PostgreSQL 接続完了');
   } catch(e) {
@@ -158,6 +165,7 @@ function resolveDataDir() {
 const DATA_DIR = resolveDataDir();
 const USERS_FILE    = path.join(DATA_DIR, 'push_users.json');
 const ARCHIVES_FILE = path.join(DATA_DIR, 'push_archives.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'push_settings.json');
 
 function loadJSON(f, fb) {
   try { if(fs.existsSync(f)) return JSON.parse(fs.readFileSync(f,'utf8')); } catch(e){}
@@ -203,6 +211,20 @@ async function addCoins(userId, email, amount, ref) {
       if (u) { u.coins = (u.coins||0) + amount; saveJSON(USERS_FILE, Object.fromEntries(userMap)); }
     }
   } catch(e) { console.error('addCoins:', e.message); }
+}
+
+// ── サイト設定（クエスト/テーマ色/文言）の取得・保存 ──
+async function getSettings() {
+  try {
+    if (db) { const r = await db.query("SELECT data FROM app_settings WHERE id='site'"); return r.rows[0]?.data || {}; }
+    return loadJSON(SETTINGS_FILE, {});
+  } catch(e) { return {}; }
+}
+async function saveSettings(obj) {
+  try {
+    if (db) { await db.query("INSERT INTO app_settings(id,data) VALUES('site',$1::jsonb) ON CONFLICT(id) DO UPDATE SET data=$1::jsonb", [JSON.stringify(obj)]); }
+    else { saveJSON(SETTINGS_FILE, obj); }
+  } catch(e) { console.error('saveSettings:', e.message); }
 }
 
 // ══════════════════════════════════════════════
@@ -408,7 +430,7 @@ app.get('/api/me', async (req, res) => {
     if (!s) return res.status(401).json({ error: '未ログイン' });
     const u = await findUserByEmail(s.email);
     if (!u) return res.status(401).json({ error: 'ユーザーが見つかりません' });
-    res.json({ user: { id: u.id, name: u.name, email: u.email } });
+    res.json({ user: { id: u.id, name: u.name, email: u.email }, isAdmin: !!ADMIN_EMAIL && (u.email||'').toLowerCase() === ADMIN_EMAIL });
   } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
 });
 
@@ -426,6 +448,30 @@ app.get('/api/coins', async (req, res) => {
     if (!s) return res.status(401).json({ error:'未ログイン' });
     res.json({ coins: await getCoins(s.userId, s.email), packs: COIN_PACKS });
   } catch(e) { res.status(500).json({ error:'サーバーエラー' }); }
+});
+
+// ── サイト設定取得（公開：全ユーザーがこの設定で描画）──
+app.get('/api/settings', async (_q, res) => {
+  try { res.json({ settings: await getSettings() }); }
+  catch(e) { res.status(500).json({ error:'サーバーエラー' }); }
+});
+
+// ── サイト設定保存（管理者のみ）──
+app.put('/api/admin/settings', async (req, res) => {
+  try {
+    const tok = (req.headers.authorization||'').replace('Bearer ','');
+    const s = sessions.get(tok);
+    if (!s) return res.status(401).json({ error:'未ログイン' });
+    if (!ADMIN_EMAIL || (s.email||'').toLowerCase() !== ADMIN_EMAIL) return res.status(403).json({ error:'管理者のみが編集できます' });
+    const b = req.body || {};
+    const settings = {
+      theme: b.theme && typeof b.theme==='object' ? b.theme : {},
+      copy:  b.copy  && typeof b.copy ==='object' ? b.copy  : {},
+      quests: Array.isArray(b.quests) ? b.quests.slice(0,50) : [],
+    };
+    await saveSettings(settings);
+    res.json({ ok:true, settings });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── チャージ：Stripe Checkout セッション作成 ──

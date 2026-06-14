@@ -782,7 +782,7 @@ body>*{position:relative;z-index:1;}
 .ms-task-donelbl{color:#10b981;font-size:11px;}
 .ms-insight-row{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border-radius:12px;padding:11px 14px;border:1px solid rgba(255,255,255,.06);margin-bottom:10px;}
 </style>
-<link rel="stylesheet" href="/guild-theme.css?v=11">
+<link rel="stylesheet" href="/guild-theme.css?v=12">
 </head>
 <body>
 
@@ -3326,15 +3326,15 @@ init();
   </button>
 </nav>
 
-<!-- ★ コインチャージ機能（Stripeテスト決済 / 高級レトロ調） -->
+<!-- ★ メダルチャージ機能（Stripeテスト決済 / 高級レトロ調） -->
 <div id="charge-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
   <div style="width:90%;max-width:360px;background:linear-gradient(180deg,#1f1812,#15100b);border-radius:14px;box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),inset 0 0 0 5px rgba(12,9,6,.7),inset 0 0 0 6px rgba(214,184,112,.18),0 20px 50px rgba(0,0,0,.6);padding:22px 20px;font-family:'DotGothic16',sans-serif;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-size:16px;font-weight:700;color:#e8ce86;text-shadow:0 1px 2px rgba(0,0,0,.6);">🪙 コインをチャージ</div>
+      <div style="font-size:16px;font-weight:700;color:#e8ce86;text-shadow:0 1px 2px rgba(0,0,0,.6);">🎖 メダルをチャージ</div>
       <div onclick="closeCharge()" style="cursor:pointer;color:#caa24a;font-size:18px;">✕</div>
     </div>
-    <div style="font-size:11px;color:rgba(231,220,193,.55);margin-bottom:3px;">現在の残高</div>
-    <div style="font-family:'Press Start 2P',monospace;font-size:17px;color:#e8ce86;margin-bottom:16px;"><span id="charge-balance">0</span> <span style="font-size:9px;">COIN</span></div>
+    <div style="font-size:11px;color:rgba(231,220,193,.55);margin-bottom:3px;">所持メダル</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:17px;color:#e8ce86;margin-bottom:16px;"><span id="charge-balance">0</span> <span style="font-size:9px;">MEDAL</span></div>
     <div id="charge-packs" style="display:flex;flex-direction:column;gap:10px;"></div>
     <div style="font-size:10px;color:rgba(231,220,193,.4);margin-top:14px;line-height:1.7;">※ テスト決済です。カード番号 <b style="color:#d8b86a;">4242 4242 4242 4242</b>／有効期限は任意の未来日／CVCは任意 で試せます。</div>
   </div>
@@ -3342,17 +3342,13 @@ init();
 <script>
 (function(){
   const TOKEN=()=>localStorage.getItem('push_token')||'';
+  // 金メダルのアイコン（SVG）
+  const MEDAL='<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-4px;display:inline-block"><defs><radialGradient id="pmg" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#fff0c0"/><stop offset="55%" stop-color="#e0b24a"/><stop offset="100%" stop-color="#9c7b2e"/></radialGradient></defs><circle cx="12" cy="13" r="8.2" fill="url(#pmg)" stroke="#7a5e22" stroke-width="1.1"/><circle cx="12" cy="13" r="5.6" fill="none" stroke="rgba(122,94,34,.55)" stroke-width="1"/><path d="M12 9l1.25 2.4 2.65.3-1.95 1.85.5 2.6L12 15.3l-2.45 1.3.5-2.6-1.95-1.85 2.65-.3z" fill="#fff7df"/></svg>';
   let PACKS={};
-  window.loadCoins=async function(){
-    const t=TOKEN(); if(!t) return;
-    try{
-      const r=await fetch('/api/coins',{headers:{Authorization:'Bearer '+t}});
-      if(!r.ok) return; const d=await r.json(); PACKS=d.packs||{};
-      const v=(d.coins||0).toLocaleString();
-      document.querySelectorAll('.coin-balance-val').forEach(e=>e.textContent=v);
-      const cb=document.getElementById('charge-balance'); if(cb) cb.textContent=v;
-    }catch(e){}
-  };
+  function fmt(n){return (n||0).toLocaleString();}
+  function countUp(el,to,dur){ if(!el)return; const from=parseInt((el.textContent||'0').replace(/[^0-9]/g,''))||0; to=to||0; if(from===to){el.textContent=fmt(to);return;} const t0=performance.now(); (function f(t){const k=Math.min(1,(t-t0)/(dur||1000)); el.textContent=fmt(Math.round(from+(to-from)*k)); if(k<1)requestAnimationFrame(f);})(performance.now()); }
+  async function fetchCoins(){ try{const r=await fetch('/api/coins',{headers:{Authorization:'Bearer '+TOKEN()}}); if(!r.ok)return null; const d=await r.json(); PACKS=d.packs||PACKS; return d.coins||0;}catch(e){return null;} }
+  window.loadCoins=async function(){ if(!TOKEN())return; const c=await fetchCoins(); if(c==null)return; document.querySelectorAll('.coin-balance-val').forEach(e=>e.textContent=fmt(c)); const cb=document.getElementById('charge-balance'); if(cb)cb.textContent=fmt(c); };
   window.openCharge=async function(){
     if(!TOKEN()){ alert('ログインしてください'); return; }
     await loadCoins();
@@ -3360,16 +3356,20 @@ init();
     Object.entries(PACKS).forEach(([key,p])=>{
       const b=document.createElement('button');
       b.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:12px;border:1px solid rgba(214,184,112,.5);background:linear-gradient(180deg,#241c14,#17100a);color:#ead8a6;font-family:'DotGothic16',sans-serif;font-size:14px;font-weight:700;cursor:pointer;";
-      b.innerHTML='<span class="pk-lbl">🪙 '+p.label+'</span><span style="color:#e8ce86;">¥'+p.jpy.toLocaleString()+'</span>';
-      b.onclick=()=>buyCoins(key,b);
+      b.innerHTML='<span class="pk-lbl">'+MEDAL+' '+p.label+'</span><span style="color:#e8ce86;">¥'+fmt(p.jpy)+'</span>';
+      b.onclick=()=>buyCoins(key,p,b);
       wrap.appendChild(b);
     });
     document.getElementById('charge-modal').style.display='flex';
   };
-  window.closeCharge=function(){ const m=document.getElementById('charge-modal'); if(m) m.style.display='none'; };
-  window.buyCoins=async function(pack,btn){
+  window.closeCharge=function(){ const m=document.getElementById('charge-modal'); if(m)m.style.display='none'; };
+  window.buyCoins=async function(pack,p,btn){
     const t=TOKEN(); if(!t){ alert('ログインしてください'); return; }
-    if(btn){ btn.disabled=true; btn.style.opacity=.6; const l=btn.querySelector('.pk-lbl'); if(l) l.textContent='接続中...'; }
+    // 直前残高と購入予定メダルを保存（戻ってきた時の演出用）
+    const before=await fetchCoins(); 
+    localStorage.setItem('push_coins_before', String(before||0));
+    localStorage.setItem('push_pending_coins', String(p&&p.coins||0));
+    if(btn){ btn.disabled=true; btn.style.opacity=.6; const l=btn.querySelector('.pk-lbl'); if(l)l.textContent='接続中...'; }
     try{
       const r=await fetch('/api/checkout/create-session',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({pack})});
       const d=await r.json();
@@ -3377,30 +3377,177 @@ init();
       else{ alert(d.error||'決済の開始に失敗しました'); if(btn){btn.disabled=false;btn.style.opacity=1;} }
     }catch(e){ alert('通信エラー: '+e.message); if(btn){btn.disabled=false;btn.style.opacity=1;} }
   };
-  // モーダル背景タップで閉じる
+  // 残高アップ演出（+N が浮かび上がる）
+  function floatGain(n){
+    const el=document.createElement('div');
+    el.innerHTML=MEDAL+' +'+fmt(n);
+    el.style.cssText="position:fixed;top:46%;left:50%;transform:translateX(-50%);z-index:9999;font-family:'Press Start 2P',monospace;font-size:22px;color:#f0dca0;text-shadow:0 2px 6px rgba(0,0,0,.7),0 0 16px rgba(224,178,74,.6);pointer-events:none;transition:all 1.6s cubic-bezier(.2,.8,.2,1);opacity:0;";
+    document.body.appendChild(el);
+    requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.top='30%'; });
+    setTimeout(()=>{ el.style.opacity='0'; el.style.top='22%'; },1300);
+    setTimeout(()=>el.remove(),2000);
+  }
+  async function chargeSuccess(){
+    const pend=parseInt(localStorage.getItem('push_pending_coins')||'0')||0;
+    const before=parseInt(localStorage.getItem('push_coins_before')||'0')||0;
+    localStorage.removeItem('push_pending_coins'); localStorage.removeItem('push_coins_before');
+    // Webhook反映を最大~7秒待つ
+    let coins=before, tries=0;
+    while(tries<7){ const c=await fetchCoins(); if(c!=null){ coins=c; if(c>=before+pend)break; } await new Promise(r=>setTimeout(r,1000)); tries++; }
+    document.querySelectorAll('.coin-balance-val').forEach(el=>{ el.textContent=fmt(before); countUp(el,coins,1200); });
+    const cb=document.getElementById('charge-balance'); if(cb){ cb.textContent=fmt(before); countUp(cb,coins,1200); }
+    if(pend>0) floatGain(pend);
+    const to=document.createElement('div'); to.innerHTML=MEDAL+' チャージが完了しました！';
+    to.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);";
+    document.body.appendChild(to); setTimeout(()=>to.remove(),4000);
+  }
   document.addEventListener('click',e=>{ if(e.target&&e.target.id==='charge-modal') closeCharge(); });
   window.addEventListener('DOMContentLoaded',()=>{
     const q=new URLSearchParams(location.search);
-    if(q.get('charge')==='success'){
-      setTimeout(loadCoins,800); setTimeout(loadCoins,2600);
-      try{ history.replaceState({},'','/'); }catch(e){}
-      const to=document.createElement('div');
-      to.textContent='🪙 チャージが完了しました！';
-      to.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);";
-      document.body.appendChild(to); setTimeout(()=>to.remove(),4000);
-    }
-    // 上部ナビに「残高ピル＋＋」を差し込む（タップでチャージ）
+    if(q.get('charge')==='success'){ try{history.replaceState({},'','/');}catch(e){} setTimeout(chargeSuccess,500); }
     setTimeout(()=>{
+      // 上部ナビに「メダル残高＋」ピル
       const nav=document.querySelector('.gnav');
       if(nav && !document.getElementById('coin-pill')){
         const pill=document.createElement('div'); pill.id='coin-pill'; pill.onclick=openCharge;
         pill.style.cssText="display:flex;align-items:center;gap:5px;cursor:pointer;background:linear-gradient(180deg,#241c14,#15100a);border:1px solid rgba(214,184,112,.5);border-radius:18px;padding:5px 11px;color:#e8ce86;font-family:'DotGothic16',sans-serif;font-size:12px;font-weight:700;margin-left:6px;white-space:nowrap;";
-        pill.innerHTML='🪙 <span class="coin-balance-val">0</span><span style="font-size:13px;opacity:.85;margin-left:2px;">＋</span>';
+        pill.innerHTML=MEDAL+' <span class="coin-balance-val">0</span><span style="font-size:13px;opacity:.85;margin-left:2px;">＋</span>';
         nav.appendChild(pill);
+      }
+      // マイページにチャージカード
+      const mp=document.getElementById('page-mypage');
+      if(mp && !document.getElementById('mp-charge-card')){
+        const card=document.createElement('div'); card.id='mp-charge-card';
+        card.style.cssText="margin:14px;padding:18px;border-radius:14px;background:linear-gradient(180deg,#1f1812,#15100b);box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),0 8px 22px rgba(0,0,0,.45);font-family:'DotGothic16',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:12px;";
+        card.innerHTML='<div><div style="font-size:11px;color:rgba(231,220,193,.55);">所持メダル</div><div style="font-family:\'Press Start 2P\',monospace;font-size:20px;color:#e8ce86;margin-top:5px;">'+MEDAL+' <span class="coin-balance-val">0</span></div></div><button onclick="openCharge()" style="background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;font-family:\'DotGothic16\',sans-serif;font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;cursor:pointer;white-space:nowrap;">チャージ</button>';
+        mp.insertBefore(card, mp.firstChild);
       }
       if(TOKEN()) loadCoins();
     },700);
   });
+})();
+</script>
+
+<!-- ★ 管理画面（オーナー専用：クエスト/デザイン/文言を編集→全員に反映）-->
+<script>
+(function(){
+  const TOKEN=()=>localStorage.getItem('push_token')||'';
+  const DEF={gold:'#d6b870',ember:'#c96a3a',parch:'#efe6cd',bg:'#120d08'};
+  let SETTINGS={theme:{},copy:{},quests:[]};
+  let _origRQ=null, built=false;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+  function applyTheme(t){
+    t=t||{}; let css='';
+    if(t.gold){ css+='.gnav-logo,.auth-logo,.l-logo{color:'+t.gold+'!important;-webkit-text-fill-color:'+t.gold+'!important;background:none!important;}#coin-pill,.boostbadge,.connbadge{color:'+t.gold+'!important;}'; }
+    if(t.ember){ css+='.asbmt,.gnav-live,.chatsbtn,.abtn,.golive-btn,.start-btn,.vb-btn,.auth-tab.on,.mp-edit-btn,.mp-save-btn,.tvb-btn,.bomb-btn,.mobile-amt-btn.sel,.mobile-push-btn,.mobile-tab.on,.ms-btn.bomb,.ms-achieve-btn,.ms-send-btn,.mobile-chat-inp button,#mp-charge-card button,.plive-pill,.livebadge{background:'+t.ember+'!important;background-image:linear-gradient(rgba(255,255,255,.06),rgba(0,0,0,.3))!important;}'; }
+    if(t.parch){ css+='.ainp,.chatinp,.cat-search-inp,.form-inp,.form-sel,#mb-trial,#mb-boost,#quest-catalog>div,.note{background:'+t.parch+'!important;}'; }
+    if(t.bg){ css+='body{background:'+t.bg+'!important;}'; }
+    let st=document.getElementById('admin-theme'); if(!st){st=document.createElement('style');st.id='admin-theme';document.head.appendChild(st);} st.textContent=css;
+  }
+  function setText(sel,val){ if(!val)return; document.querySelectorAll(sel).forEach(e=>e.textContent=val); }
+  function applyCopy(c){ c=c||{}; setText('.auth-sub',c.tagline); setText('#page-quest .dash-title',c.questTitle); setText('#page-quest .dash-card-title',c.questSubtitle); }
+  function renderQuestsFromSettings(){
+    const el=document.getElementById('quest-catalog'); if(!el)return;
+    el.innerHTML=SETTINGS.quests.map(q=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(180,130,255,.1);border-radius:10px;"><div style="font-size:22px;flex-shrink:0;">'+esc(q.icon)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#E8E0FF;">'+esc(q.name)+'</div><div style="font-size:10px;color:rgba(180,150,255,.5);margin-top:1px;">'+esc(q.desc)+'</div><div style="font-size:10px;color:rgba(200,180,255,.4);margin-top:2px;">'+esc(q.diff||'')+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-family:\'Space Mono\',monospace;font-size:14px;font-weight:700;color:#E040FB;text-shadow:0 0 10px rgba(224,64,251,.4);">+'+(parseInt(q.exp)||0)+' XP</div><div style="font-size:10px;color:#FFD700;margin-top:2px;">'+esc(q.boost||'')+'</div></div></div>').join('');
+  }
+  function hookQuests(){ if(_origRQ)return; _origRQ=window.renderQuestCatalog; window.renderQuestCatalog=function(){ if(SETTINGS.quests&&SETTINGS.quests.length) renderQuestsFromSettings(); else if(typeof _origRQ==='function') _origRQ(); }; }
+  function applyAll(){ applyTheme(SETTINGS.theme); applyCopy(SETTINGS.copy); hookQuests(); if(SETTINGS.quests.length){ try{window.renderQuestCatalog();}catch(e){} } }
+
+  async function loadSettings(){ try{const r=await fetch('/api/settings');const d=await r.json();const x=d.settings||{};SETTINGS={theme:x.theme||{},copy:x.copy||{},quests:Array.isArray(x.quests)?x.quests:[]};}catch(e){} applyAll(); }
+
+  // ---- 管理パネル ----
+  function inp(label,id,type,val){ return '<label style="display:block;margin:10px 0 4px;font-size:11px;color:#d8b86a;">'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(val||'')+'" style="width:100%;padding:9px 11px;border-radius:9px;border:1px solid rgba(214,184,112,.5);background:#efe6cd;color:#33230f;font-family:\'DotGothic16\',sans-serif;font-size:13px;'+(type==='color'?'height:40px;padding:3px;':'')+'">'; }
+  function questRowHTML(q){ q=q||{}; return '<div class="adm-quest" style="border:1px solid rgba(214,184,112,.3);border-radius:10px;padding:10px;margin-bottom:9px;background:rgba(0,0,0,.2);">'
+    +'<div style="display:flex;gap:6px;">'
+    +'<input class="aq-icon" value="'+esc(q.icon||'⚔️')+'" placeholder="絵文字" style="width:46px;text-align:center;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:15px;">'
+    +'<input class="aq-name" value="'+esc(q.name||'')+'" placeholder="クエスト名" style="flex:1;padding:7px 9px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:13px;font-family:\'DotGothic16\',sans-serif;">'
+    +'<button class="aq-del" style="background:#9c3f24;border:1px solid rgba(247,226,170,.5);color:#fff;border-radius:8px;width:34px;cursor:pointer;">✕</button></div>'
+    +'<input class="aq-desc" value="'+esc(q.desc||'')+'" placeholder="説明" style="width:100%;margin-top:6px;padding:7px 9px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;font-family:\'DotGothic16\',sans-serif;">'
+    +'<div style="display:flex;gap:6px;margin-top:6px;">'
+    +'<input class="aq-exp" type="number" value="'+(parseInt(q.exp)||0)+'" placeholder="XP" style="width:70px;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;">'
+    +'<input class="aq-boost" value="'+esc(q.boost||'')+'" placeholder="報酬(例:+10%)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;font-family:\'DotGothic16\',sans-serif;">'
+    +'<input class="aq-diff" value="'+esc(q.diff||'★☆☆')+'" placeholder="難易度" style="width:74px;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;">'
+    +'</div></div>'; }
+
+  function build(){
+    if(built)return; built=true;
+    const seedQuests = (SETTINGS.quests&&SETTINGS.quests.length) ? SETTINGS.quests : (typeof QUEST_CATALOG!=='undefined'?QUEST_CATALOG:[]);
+    const t=Object.assign({},DEF,SETTINGS.theme||{}); const c=SETTINGS.copy||{};
+    const wrap=document.createElement('div'); wrap.id='admin-panel';
+    wrap.style.cssText="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);";
+    wrap.innerHTML=
+      '<div style="position:absolute;top:0;right:0;bottom:0;width:92%;max-width:420px;background:linear-gradient(180deg,#1b150e,#100b07);box-shadow:-8px 0 30px rgba(0,0,0,.6);display:flex;flex-direction:column;font-family:\'DotGothic16\',sans-serif;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(214,184,112,.3);">'
+        +'<div style="font-size:16px;font-weight:700;color:#e8ce86;">⚙ 管理画面</div>'
+        +'<div id="adm-close" style="cursor:pointer;color:#caa24a;font-size:20px;">✕</div></div>'
+      +'<div style="display:flex;gap:6px;padding:12px 14px;border-bottom:1px solid rgba(214,184,112,.18);">'
+        +'<button class="adm-tab" data-tab="quest" style="flex:1;">クエスト</button>'
+        +'<button class="adm-tab" data-tab="design" style="flex:1;">デザイン</button>'
+        +'<button class="adm-tab" data-tab="copy" style="flex:1;">文言</button></div>'
+      +'<div style="flex:1;overflow-y:auto;padding:16px 18px;">'
+        +'<div class="adm-pane" data-pane="quest"><div id="adm-quests"></div>'
+          +'<button id="adm-addq" style="width:100%;padding:11px;border-radius:10px;border:1px dashed rgba(214,184,112,.5);background:transparent;color:#d8b86a;cursor:pointer;font-family:\'DotGothic16\',sans-serif;font-size:13px;">＋ クエストを追加</button></div>'
+        +'<div class="adm-pane" data-pane="design" style="display:none;">'
+          +inp('金（ゴールド）','adm-gold','color',t.gold)+inp('炎・赤銅（ボタン）','adm-ember','color',t.ember)
+          +inp('羊皮紙（入力欄など）','adm-parch','color',t.parch)+inp('背景','adm-bg','color',t.bg)
+          +'<div style="font-size:10px;color:rgba(231,220,193,.4);margin-top:10px;line-height:1.6;">※ 主要なアクセント（ロゴ・ボタン・羊皮紙・背景）に反映されます。</div></div>'
+        +'<div class="adm-pane" data-pane="copy" style="display:none;">'
+          +inp('キャッチコピー（ログイン下）','adm-tagline','text',c.tagline)
+          +inp('クエスト見出し','adm-qtitle','text',c.questTitle)
+          +inp('クエスト小見出し','adm-qsub','text',c.questSubtitle)+'</div>'
+      +'</div>'
+      +'<div style="padding:14px 18px;border-top:1px solid rgba(214,184,112,.3);">'
+        +'<button id="adm-save" style="width:100%;padding:13px;border-radius:12px;border:1px solid rgba(247,226,170,.6);background:linear-gradient(180deg,#c96a3a,#9c3f24);color:#fff8ef;font-weight:700;font-size:15px;cursor:pointer;font-family:\'DotGothic16\',sans-serif;">保存して反映</button></div>'
+      +'</div>';
+    document.body.appendChild(wrap);
+    // タブ装飾
+    wrap.querySelectorAll('.adm-tab').forEach(b=>{ b.style.cssText+="padding:8px;border-radius:9px;border:1px solid rgba(214,184,112,.4);background:#241c14;color:#ead8a6;font-family:'DotGothic16',sans-serif;font-size:13px;cursor:pointer;"; b.onclick=()=>{ wrap.querySelectorAll('.adm-pane').forEach(p=>p.style.display=p.dataset.pane===b.dataset.tab?'':'none'); wrap.querySelectorAll('.adm-tab').forEach(x=>x.style.background='#241c14'); b.style.background='#c96a3a'; }; });
+    wrap.querySelector('.adm-tab').style.background='#c96a3a';
+    // クエスト行
+    const qc=wrap.querySelector('#adm-quests'); seedQuests.forEach(q=>qc.insertAdjacentHTML('beforeend',questRowHTML(q)));
+    qc.addEventListener('click',e=>{ if(e.target.classList.contains('aq-del')) e.target.closest('.adm-quest').remove(); });
+    wrap.querySelector('#adm-addq').onclick=()=>qc.insertAdjacentHTML('beforeend',questRowHTML({}));
+    wrap.querySelector('#adm-close').onclick=()=>wrap.style.display='none';
+    wrap.addEventListener('click',e=>{ if(e.target===wrap) wrap.style.display='none'; });
+    wrap.querySelector('#adm-save').onclick=saveAdmin;
+  }
+  function openAdmin(){ build(); document.getElementById('admin-panel').style.display='block'; }
+  window.openAdmin=openAdmin;
+
+  async function saveAdmin(){
+    const w=document.getElementById('admin-panel');
+    const quests=[...w.querySelectorAll('.adm-quest')].map(r=>({
+      icon:r.querySelector('.aq-icon').value.trim()||'⚔️',
+      name:r.querySelector('.aq-name').value.trim(),
+      desc:r.querySelector('.aq-desc').value.trim(),
+      exp:parseInt(r.querySelector('.aq-exp').value)||0,
+      boost:r.querySelector('.aq-boost').value.trim(),
+      diff:r.querySelector('.aq-diff').value.trim(),
+    })).filter(q=>q.name);
+    const theme={ gold:w.querySelector('#adm-gold').value, ember:w.querySelector('#adm-ember').value, parch:w.querySelector('#adm-parch').value, bg:w.querySelector('#adm-bg').value };
+    const copy={ tagline:w.querySelector('#adm-tagline').value.trim(), questTitle:w.querySelector('#adm-qtitle').value.trim(), questSubtitle:w.querySelector('#adm-qsub').value.trim() };
+    const btn=w.querySelector('#adm-save'); btn.disabled=true; btn.textContent='保存中...';
+    try{
+      const r=await fetch('/api/admin/settings',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TOKEN()},body:JSON.stringify({theme,copy,quests})});
+      const d=await r.json();
+      if(r.ok && d.settings){ SETTINGS={theme:d.settings.theme||{},copy:d.settings.copy||{},quests:d.settings.quests||[]}; applyAll(); w.style.display='none';
+        const to=document.createElement('div'); to.textContent='✅ 反映しました'; to.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;"; document.body.appendChild(to); setTimeout(()=>to.remove(),3000);
+      } else { alert(d.error||'保存に失敗しました'); }
+    }catch(e){ alert('通信エラー: '+e.message); }
+    btn.disabled=false; btn.textContent='保存して反映';
+  }
+
+  function injectGear(){
+    if(document.getElementById('adm-gear'))return;
+    const g=document.createElement('div'); g.id='adm-gear'; g.title='管理画面'; g.onclick=openAdmin;
+    g.textContent='⚙';
+    g.style.cssText="position:fixed;left:14px;bottom:74px;z-index:8000;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;background:linear-gradient(180deg,#241c14,#15100a);border:1px solid rgba(214,184,112,.6);color:#e8ce86;box-shadow:0 4px 14px rgba(0,0,0,.5);";
+    document.body.appendChild(g);
+  }
+  async function checkAdmin(){ const t=TOKEN(); if(!t)return false; try{const r=await fetch('/api/me',{headers:{Authorization:'Bearer '+t}});const d=await r.json();return !!d.isAdmin;}catch(e){return false;} }
+
+  window.addEventListener('DOMContentLoaded',()=>{ loadSettings(); setTimeout(async()=>{ if(await checkAdmin()) injectGear(); },900); });
 })();
 </script>
 
