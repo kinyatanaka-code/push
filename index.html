@@ -3325,5 +3325,84 @@ init();
     <span style="font-size:20px;">👤</span><span>マイページ</span>
   </button>
 </nav>
+
+<!-- ★ コインチャージ機能（Stripeテスト決済 / 高級レトロ調） -->
+<div id="charge-modal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.6);align-items:center;justify-content:center;">
+  <div style="width:90%;max-width:360px;background:linear-gradient(180deg,#1f1812,#15100b);border-radius:14px;box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),inset 0 0 0 5px rgba(12,9,6,.7),inset 0 0 0 6px rgba(214,184,112,.18),0 20px 50px rgba(0,0,0,.6);padding:22px 20px;font-family:'DotGothic16',sans-serif;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:16px;font-weight:700;color:#e8ce86;text-shadow:0 1px 2px rgba(0,0,0,.6);">🪙 コインをチャージ</div>
+      <div onclick="closeCharge()" style="cursor:pointer;color:#caa24a;font-size:18px;">✕</div>
+    </div>
+    <div style="font-size:11px;color:rgba(231,220,193,.55);margin-bottom:3px;">現在の残高</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:17px;color:#e8ce86;margin-bottom:16px;"><span id="charge-balance">0</span> <span style="font-size:9px;">COIN</span></div>
+    <div id="charge-packs" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="font-size:10px;color:rgba(231,220,193,.4);margin-top:14px;line-height:1.7;">※ テスト決済です。カード番号 <b style="color:#d8b86a;">4242 4242 4242 4242</b>／有効期限は任意の未来日／CVCは任意 で試せます。</div>
+  </div>
+</div>
+<script>
+(function(){
+  const TOKEN=()=>localStorage.getItem('push_token')||'';
+  let PACKS={};
+  window.loadCoins=async function(){
+    const t=TOKEN(); if(!t) return;
+    try{
+      const r=await fetch('/api/coins',{headers:{Authorization:'Bearer '+t}});
+      if(!r.ok) return; const d=await r.json(); PACKS=d.packs||{};
+      const v=(d.coins||0).toLocaleString();
+      document.querySelectorAll('.coin-balance-val').forEach(e=>e.textContent=v);
+      const cb=document.getElementById('charge-balance'); if(cb) cb.textContent=v;
+    }catch(e){}
+  };
+  window.openCharge=async function(){
+    if(!TOKEN()){ alert('ログインしてください'); return; }
+    await loadCoins();
+    const wrap=document.getElementById('charge-packs'); wrap.innerHTML='';
+    Object.entries(PACKS).forEach(([key,p])=>{
+      const b=document.createElement('button');
+      b.style.cssText="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:12px;border:1px solid rgba(214,184,112,.5);background:linear-gradient(180deg,#241c14,#17100a);color:#ead8a6;font-family:'DotGothic16',sans-serif;font-size:14px;font-weight:700;cursor:pointer;";
+      b.innerHTML='<span class="pk-lbl">🪙 '+p.label+'</span><span style="color:#e8ce86;">¥'+p.jpy.toLocaleString()+'</span>';
+      b.onclick=()=>buyCoins(key,b);
+      wrap.appendChild(b);
+    });
+    document.getElementById('charge-modal').style.display='flex';
+  };
+  window.closeCharge=function(){ const m=document.getElementById('charge-modal'); if(m) m.style.display='none'; };
+  window.buyCoins=async function(pack,btn){
+    const t=TOKEN(); if(!t){ alert('ログインしてください'); return; }
+    if(btn){ btn.disabled=true; btn.style.opacity=.6; const l=btn.querySelector('.pk-lbl'); if(l) l.textContent='接続中...'; }
+    try{
+      const r=await fetch('/api/checkout/create-session',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({pack})});
+      const d=await r.json();
+      if(d.url){ location.href=d.url; }
+      else{ alert(d.error||'決済の開始に失敗しました'); if(btn){btn.disabled=false;btn.style.opacity=1;} }
+    }catch(e){ alert('通信エラー: '+e.message); if(btn){btn.disabled=false;btn.style.opacity=1;} }
+  };
+  // モーダル背景タップで閉じる
+  document.addEventListener('click',e=>{ if(e.target&&e.target.id==='charge-modal') closeCharge(); });
+  window.addEventListener('DOMContentLoaded',()=>{
+    const q=new URLSearchParams(location.search);
+    if(q.get('charge')==='success'){
+      setTimeout(loadCoins,800); setTimeout(loadCoins,2600);
+      try{ history.replaceState({},'','/'); }catch(e){}
+      const to=document.createElement('div');
+      to.textContent='🪙 チャージが完了しました！';
+      to.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);";
+      document.body.appendChild(to); setTimeout(()=>to.remove(),4000);
+    }
+    // 上部ナビに「残高ピル＋＋」を差し込む（タップでチャージ）
+    setTimeout(()=>{
+      const nav=document.querySelector('.gnav');
+      if(nav && !document.getElementById('coin-pill')){
+        const pill=document.createElement('div'); pill.id='coin-pill'; pill.onclick=openCharge;
+        pill.style.cssText="display:flex;align-items:center;gap:5px;cursor:pointer;background:linear-gradient(180deg,#241c14,#15100a);border:1px solid rgba(214,184,112,.5);border-radius:18px;padding:5px 11px;color:#e8ce86;font-family:'DotGothic16',sans-serif;font-size:12px;font-weight:700;margin-left:6px;white-space:nowrap;";
+        pill.innerHTML='🪙 <span class="coin-balance-val">0</span><span style="font-size:13px;opacity:.85;margin-left:2px;">＋</span>';
+        nav.appendChild(pill);
+      }
+      if(TOKEN()) loadCoins();
+    },700);
+  });
+})();
+</script>
+
 </body>
 </html>

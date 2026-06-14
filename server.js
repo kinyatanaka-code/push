@@ -6,6 +6,18 @@ const crypto   = require('crypto');
 const fs       = require('fs');
 const path     = require('path');
 
+// ── Stripe（コインチャージ用）──
+const Stripe = require('stripe');
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+// 購入できるコインパック（価格はサーバー側で確定＝改ざん防止）
+const COIN_PACKS = {
+  p120:  { coins:120,  jpy:120,  label:'120 コイン' },
+  p550:  { coins:550,  jpy:500,  label:'550 コイン（+10%）' },
+  p1200: { coins:1200, jpy:1000, label:'1,200 コイン（+20%）' },
+  p3800: { coins:3800, jpy:3000, label:'3,800 コイン（+27%）' },
+};
+
 // ── クラッシュ防止 ──
 process.on('uncaughtException',  e => console.error('[uncaughtException]', e));
 process.on('unhandledRejection', e => console.error('[unhandledRejection]', e));
@@ -18,6 +30,30 @@ const io     = new Server(server, {
   pingTimeout:  10000,
   transports: ['websocket', 'polling'],
 });
+// ── Stripe Webhook（署名検証に生ボディが必要 → express.json より前に登録）──
+app.post('/api/stripe/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) return res.status(500).send('stripe未設定');
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET);
+  } catch (e) {
+    console.error('⚠️ Webhook署名検証失敗:', e.message);
+    return res.status(400).send(`Webhook Error: ${e.message}`);
+  }
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const sess = event.data.object;
+      const md = sess.metadata || {};
+      const coins = parseInt(md.coins || '0', 10);
+      if (coins > 0 && md.userId) {
+        await addCoins(md.userId, md.email, coins, 'stripe:' + sess.id);
+        console.log(`🪙 入金確定: ${md.email} +${coins}コイン (${sess.id})`);
+      }
+    }
+  } catch (e) { console.error('webhook処理:', e.message); }
+  res.json({ received: true });
+});
+
 app.use(express.json());
 app.use(express.static(__dirname));
 app.get('/health', (_q, r) => r.json({ ok: true, uptime: process.uptime() }));
@@ -91,6 +127,13 @@ async function initDB() {
         started_at TIMESTAMPTZ, ended_at TIMESTAMPTZ DEFAULT NOW()
       );
       ALTER TABLE archives ADD COLUMN IF NOT EXISTS is_timelapse BOOLEAN DEFAULT FALSE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0;
+      CREATE TABLE IF NOT EXISTS coin_tx (
+        ref TEXT PRIMARY KEY,
+        user_id UUID,
+        amount INTEGER,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     console.log('✅ PostgreSQL 接続完了');
   } catch(e) {
@@ -134,6 +177,33 @@ console.log(`📊 ユーザー${userMap.size}件 / アーカイブ${archiveMap.s
 const hashPw  = p  => crypto.createHash('sha256').update(p+'push_salt').digest('hex');
 const mkToken = () => crypto.randomBytes(32).toString('hex');
 const mkUUID  = () => crypto.randomUUID();
+
+// ── コイン残高（DB or Map）──
+async function getCoins(userId, email) {
+  try {
+    if (db) { const r = await db.query('SELECT coins FROM users WHERE id=$1', [userId]); return r.rows[0]?.coins || 0; }
+    const u = userMap.get(email); return u?.coins || 0;
+  } catch(e) { return 0; }
+}
+// ── コイン加算（ref で冪等＝Webhook再送でも二重加算しない）──
+async function addCoins(userId, email, amount, ref) {
+  try {
+    if (db) {
+      const ins = await db.query(
+        'INSERT INTO coin_tx(ref,user_id,amount) VALUES($1,$2,$3) ON CONFLICT(ref) DO NOTHING RETURNING ref',
+        [ref, userId, amount]
+      );
+      if (ins.rowCount === 0) return; // 既に処理済み
+      await db.query('UPDATE users SET coins = COALESCE(coins,0) + $1 WHERE id=$2', [amount, userId]);
+    } else {
+      if (!global.__coinRefs) global.__coinRefs = new Set();
+      if (global.__coinRefs.has(ref)) return;
+      global.__coinRefs.add(ref);
+      const u = userMap.get(email);
+      if (u) { u.coins = (u.coins||0) + amount; saveJSON(USERS_FILE, Object.fromEntries(userMap)); }
+    }
+  } catch(e) { console.error('addCoins:', e.message); }
+}
 
 // ══════════════════════════════════════════════
 // ライブ状態管理（メモリ）
@@ -346,6 +416,41 @@ app.post('/api/logout', (req, res) => {
   const tok = (req.headers.authorization||'').replace('Bearer ','');
   sessions.delete(tok);
   res.json({ ok: true });
+});
+
+// ── コイン残高取得 ──
+app.get('/api/coins', async (req, res) => {
+  try {
+    const tok = (req.headers.authorization||'').replace('Bearer ','');
+    const s = sessions.get(tok);
+    if (!s) return res.status(401).json({ error:'未ログイン' });
+    res.json({ coins: await getCoins(s.userId, s.email), packs: COIN_PACKS });
+  } catch(e) { res.status(500).json({ error:'サーバーエラー' }); }
+});
+
+// ── チャージ：Stripe Checkout セッション作成 ──
+app.post('/api/checkout/create-session', async (req, res) => {
+  try {
+    if (!stripe) return res.status(500).json({ error:'決済が未設定です（STRIPE_SECRET_KEY を設定してください）' });
+    const tok = (req.headers.authorization||'').replace('Bearer ','');
+    const s = sessions.get(tok);
+    if (!s) return res.status(401).json({ error:'未ログイン' });
+    const pack = COIN_PACKS[(req.body||{}).pack];
+    if (!pack) return res.status(400).json({ error:'不正なパックです' });
+    const origin = req.headers.origin || `https://${req.headers.host}`;
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: { currency:'jpy', product_data:{ name:`PUSH ${pack.label}` }, unit_amount: pack.jpy },
+        quantity: 1,
+      }],
+      metadata: { userId: s.userId, email: s.email, coins: String(pack.coins), pack: req.body.pack },
+      success_url: `${origin}/?charge=success`,
+      cancel_url:  `${origin}/?charge=cancel`,
+    });
+    res.json({ url: session.url });
+  } catch(e) { console.error('create-session:', e.message); res.status(500).json({ error: e.message }); }
 });
 
 // ── 配信一覧 ──
