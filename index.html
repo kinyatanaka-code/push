@@ -3554,5 +3554,32 @@ init();
 })();
 </script>
 
+<!-- ★ ギルド調カスタムアイコン（ナビ各所に適用 / 色はラベルに追従）-->
+<script>
+(function(){
+  function S(svg,sz){return svg.replace('@',String(sz));}
+  const ICO={
+    home:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M4 11 L12 4 L20 11"/><path d="M6 10 V20 H18 V10"/><path d="M10 20 V14.5 H14 V20"/><path d="M12 4 V1.6"/><path d="M12 2 L15.2 2.9 L12 3.9 Z" fill="#c96a3a" stroke="none"/></svg>',s),
+    mypage:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M6 10.5 C6 6.5 8.7 4.5 12 4.5 C15.3 4.5 18 6.5 18 10.5 L18 14.5 C18 16.7 16.2 18.5 14 18.5 L10 18.5 C7.8 18.5 6 16.7 6 14.5 Z"/><path d="M7.6 11.6 H16.4"/><path d="M7.8 13.8 H13.6"/><circle cx="12" cy="8" r="1.05" fill="#c96a3a" stroke="none"/></svg>',s),
+    stream:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 3 C13.7 6 15.9 7.3 14.9 10.7 C14.3 12.7 13 13.6 12 13.6 C11 13.6 9.7 12.7 9.1 10.7 C8.3 7.6 10.3 6.2 12 3 Z" fill="#c96a3a"/><path d="M7.5 15.5 H16.5 L15.5 17.6 H8.5 Z"/><path d="M9 17.6 L8 20.6"/><path d="M15 17.6 L16 20.6"/></svg>',s),
+    quest:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="5.5" y="6" width="13" height="12" rx="1.6"/><path d="M8 6 V18"/><path d="M16 6 V18"/><path d="M10 10 H14"/><path d="M10 13 H13.4"/><circle cx="12" cy="16" r="1.1" fill="#c96a3a" stroke="none"/></svg>',s),
+    timelapse:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M7.5 4 H16.5"/><path d="M7.5 20 H16.5"/><path d="M9 4 C9 8.5 15 8.5 15 4"/><path d="M9 20 C9 15.5 15 15.5 15 20"/><path d="M12 9 V15"/><path d="M10 19 L14 19 L12 15.6 Z" fill="#c96a3a" stroke="none"/></svg>',s),
+    live:s=>S('<svg width="@" height="@" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="3" fill="#c96a3a" stroke="none"/><path d="M7 7 C5 9.2 5 14.8 7 17"/><path d="M17 7 C19 9.2 19 14.8 17 17"/></svg>',s),
+  };
+  function apply(){
+    const sb={'sb-home':'home','sb-mypage':'mypage','sb-stream':'stream','sb-quest':'quest'};
+    Object.entries(sb).forEach(([id,n])=>{ const it=document.getElementById(id); if(it){ const ic=it.querySelector('.sb-icon'); if(ic){ic.style.width='auto';ic.innerHTML=ICO[n](17);} } });
+    const live=document.getElementById('htab-live'); if(live) live.innerHTML=ICO.live(14)+' ライブ中';
+    const tl=document.getElementById('htab-timelapse'); if(tl) tl.innerHTML=ICO.timelapse(14)+' タイムラプス';
+    document.querySelectorAll('#mobile-nav button, #mobile-menu button').forEach(b=>{
+      const m=(b.getAttribute('onclick')||'').match(/showPage\('(\w+)'\)/); if(!m)return;
+      const n=m[1]; if(!ICO[n])return;
+      const sp=b.querySelector('span'); if(sp){ const sz=b.closest('#mobile-nav')?22:20; sp.innerHTML=ICO[n](sz); }
+    });
+  }
+  window.addEventListener('DOMContentLoaded',()=>{ apply(); setTimeout(apply,400); });
+})();
+</script>
+
 </body>
 </html>
