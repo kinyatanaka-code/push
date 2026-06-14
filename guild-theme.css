@@ -1,8 +1,10 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v4)
+   PUSH ギルドテーマ  guild-theme.css  (v7)
    ------------------------------------------------------------
-   v4: 紙の材質を古紙に（繊維ノイズ＋シミ＋縁の焼け＋黄ばみ）。
-   差し替えたら index.html の <link> を ?v=4 に上げてください。
+   v7: 丸いゲームUIのボタンをアプリ全体へ拡張（角ばり廃止・
+       真鍮縁の丸ボタン / 丸い肖像アバター / ピルも丸く）。
+   差し替えたら index.html の <link> を ?v=7 に上げてください。
+   v6: スマホ配信オーバーレイをゲームUIに（丸メダル/巻物/石盤）。
    v3: クエストボードを「木枠＋四隅ボルト＋縦板」に。
        各依頼を画鋲で斜めに留めた羊皮紙のメモ風に。
    v2: ロゴ消え対策 / 薄い紫文字のコントラスト改善 /
@@ -394,3 +396,160 @@ body::after{
     inset 0 0 14px rgba(120,78,30,.18),
     inset -2px -2px 0 rgba(110,80,38,.5) !important;
 }
+
+/* ============================================================
+   v6 — スマホ配信オーバーレイを「ゲームUI」に
+   ・角張りを廃止：丸い木彫メダル / 巻物 / 石盤調
+   ・ゴール札とコメントを控えめに（映像の邪魔をしない）
+   ============================================================ */
+
+/* LIVE → 残り火のリボン（角を丸く） */
+.ms-live-pill{
+  background:linear-gradient(180deg,#ff6a35,#c4301a) !important;
+  border:1px solid #ffcf6a !important; border-radius:13px !important;
+  font-family:'Press Start 2P',monospace !important; font-size:8px !important; letter-spacing:1px !important;
+  box-shadow:0 2px 5px rgba(0,0,0,.5) !important;
+}
+.ms-timer{ font-family:'Press Start 2P',monospace !important; font-size:11px !important; color:#f0e0bc !important; }
+.ms-viewers{ color:#f0e0bc !important; }
+
+/* 閉じる → 丸い石盤ボタン */
+.ms-close{
+  background:radial-gradient(circle at 35% 30%, #9a958c, #46423b 75%) !important;
+  border:2px solid #2a2622 !important; border-radius:50% !important; color:#f0e8d8 !important;
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.22), inset 0 -2px 3px rgba(0,0,0,.5), 0 2px 4px rgba(0,0,0,.5) !important;
+  backdrop-filter:none !important;
+}
+
+/* 右サイド → 丸い木彫メダル（真鍮の縁・ドーム状） */
+.ms-btn{
+  background:radial-gradient(circle at 36% 26%, #7c5331, #4a2f18 70%) !important;
+  border:2px solid #caa34a !important; border-radius:28px !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.35), inset 0 -3px 6px rgba(0,0,0,.5), 0 3px 7px rgba(0,0,0,.45) !important;
+  backdrop-filter:none !important; padding:10px 0 !important;
+}
+.ms-btn.bomb{
+  background:radial-gradient(circle at 36% 26%, #ff8a4a, #c4401a 72%) !important;
+  border-color:#ffcf6a !important;
+}
+.ms-btn-val{ color:#f4e3b0 !important; }
+.ms-btn-val.or{ color:#fff3e0 !important; }
+.ms-btn-lbl{ color:#ead6a6 !important; }
+.ms-badge{ background:#b8341a !important; border-radius:50% !important; box-shadow:0 0 6px rgba(255,80,40,.85) !important; }
+
+/* ゴール札 → 最小化（薄い小さなタグに） */
+.ms-goal{
+  bottom:auto !important; top:46px !important;            /* 中央下→上部の隅へ */
+  left:auto !important; right:14px !important; transform:none !important;
+  background:rgba(40,26,13,.5) !important;
+  border:1px solid rgba(224,178,74,.45) !important; border-radius:14px !important;
+  box-shadow:none !important; backdrop-filter:blur(6px) !important;
+  padding:3px 11px !important; max-width:52vw !important; opacity:.88;
+}
+.ms-goal-lbl{ font-size:8px !important; color:rgba(255,200,150,.85) !important; letter-spacing:1px !important; }
+.ms-goal-txt{ font-size:11px !important; color:#f0e0bc !important; font-weight:700 !important; }
+
+/* 流れるコメント → 控えめな半透明ピル（映像を塞がない） */
+#ms-comment-flow{ max-height:32% !important; opacity:.9 !important; }
+.ms-fcmt,.fcmt{
+  background:rgba(28,18,9,.5) !important; color:#f3e7cf !important;
+  border:1px solid rgba(224,178,74,.28) !important; border-radius:14px !important;
+  font-size:12px !important; padding:4px 11px !important;
+  box-shadow:none !important; backdrop-filter:blur(4px) !important;
+}
+
+/* 目標達成 → 丸い炎の宣言バナー */
+.ms-achieve-btn{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important;
+  border:2px solid #ffcf6a !important; border-radius:26px !important; color:#fff8ef !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5), inset 0 -3px 6px rgba(0,0,0,.4), 0 4px 8px rgba(0,0,0,.45) !important;
+  font-weight:800 !important;
+}
+/* 配信開始 → 丸い木のボタン */
+.ms-start-btn{
+  background:radial-gradient(circle at 50% 0%, #7c5331, #3a2410 80%) !important;
+  border:2px solid #caa34a !important; border-radius:26px !important; color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3), inset 0 -3px 6px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.45) !important;
+}
+
+/* コメント入力 → 巻物風の丸い古紙 */
+.ms-inp-wrap{
+  background:var(--parch) !important;
+  border:2px solid #b0904f !important; border-radius:22px !important;
+  box-shadow:inset 0 1px 2px rgba(255,240,200,.4), inset 0 -2px 4px rgba(110,80,38,.4), 0 2px 4px rgba(0,0,0,.4) !important;
+  backdrop-filter:none !important;
+}
+.ms-inp{ color:var(--ink) !important; }
+.ms-inp::placeholder{ color:rgba(90,65,30,.55) !important; }
+/* 送信 → 丸い炎ボタン */
+.ms-send-btn{
+  background:radial-gradient(circle at 36% 26%, #ff8a4a, #c4401a 72%) !important;
+  border:2px solid #ffcf6a !important; border-radius:50% !important; color:#fff8ef !important;
+  width:42px !important; height:42px !important; padding:0 !important; font-size:11px !important; line-height:1.1 !important;
+  box-shadow:inset 0 2px 2px rgba(255,225,180,.4), 0 2px 4px rgba(0,0,0,.45) !important;
+}
+
+/* ドロワー → 真鍮縁の丸い木枠 */
+.ms-drawer{
+  background:linear-gradient(180deg,#3a2410,#1a1108) !important;
+  border:3px solid #caa34a !important; border-bottom:none !important;
+  border-radius:22px 22px 0 0 !important; backdrop-filter:none !important;
+}
+
+/* ============================================================
+   v7 — 丸いゲームUIをアプリ全体のボタンへ拡張
+   角張ったベベルを廃止し、真鍮縁＋ドーム状の丸ボタンへ統一
+   ============================================================ */
+
+/* 主要CTA（炎の丸ボタン） */
+.asbmt,.gnav-live,.chatsbtn,.abtn,.arch-close-btn,.golive-btn,.start-btn,
+.task-done-btn,.ms-task-clrbtn,.vb-btn,.auth-tab.on,.mp-edit-btn,.mp-save-btn,.tvb-btn{
+  background:linear-gradient(180deg,#ff8a4a,#c4401a) !important;
+  border:2px solid #ffcf6a !important;
+  border-radius:24px !important;
+  color:#fff8ef !important;
+  box-shadow:inset 0 2px 3px rgba(255,225,180,.5), inset 0 -3px 6px rgba(0,0,0,.4), 0 3px 7px rgba(0,0,0,.4) !important;
+  letter-spacing:.03em;
+  transition:transform .12s, filter .12s !important;
+}
+.asbmt:hover,.gnav-live:hover,.chatsbtn:hover,.abtn:hover,.golive-btn:hover,
+.start-btn:hover,.task-done-btn:hover,.vb-btn:hover{ transform:translateY(-1px); filter:brightness(1.06); }
+
+/* 副ボタン・アイコンボタン（木の丸メダル） */
+.gnav-btn,.gnav-grid,.bomb-btn,.mp-tab,.cat-pill,.arch-tab,.gnav-search-btn{
+  background:radial-gradient(circle at 40% 25%, #7c5331, #4a2f18 72%) !important;
+  border:2px solid #caa34a !important;
+  border-radius:20px !important;
+  color:#f0e0bc !important;
+  box-shadow:inset 0 2px 3px rgba(255,210,150,.3), inset 0 -3px 6px rgba(0,0,0,.5), 0 3px 6px rgba(0,0,0,.4) !important;
+}
+
+/* 入力欄も角を丸めて馴染ませる（古紙はそのまま） */
+.ainp,.chatinp,.cat-search-inp,.gnav-search input,.bsp-field,.bsp-ta,
+.form-inp,.form-sel,.cat-sel{
+  border-radius:16px !important;
+}
+
+/* アバター → 丸い肖像メダル（真鍮の縁） */
+.ava,.gnav-ava,.pava{
+  border-radius:50% !important;
+  border:2px solid #caa34a !important;
+  box-shadow:inset 0 2px 2px rgba(255,240,200,.4), 0 2px 4px rgba(0,0,0,.4) !important;
+}
+
+/* ピル・バッジも丸く */
+.plive-pill,.boostbadge,.connbadge,.task-badge,.level-badge,.fatigue-badge,.prod-rank-badge{
+  border-radius:13px !important;
+}
+
+/* サイドバー項目 → 丸いハイライト（左の角アクセントは廃止） */
+.sb-item{ border-radius:14px !important; margin:3px 8px !important; }
+.sb-item.on{
+  border-left:none !important;
+  background:rgba(232,100,42,.18) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,180,120,.3) !important;
+}
+
+/* 認証タブの土台も丸く */
+.auth-tabs{ border-radius:22px !important; }
+.auth-tab{ border-radius:18px !important; }
