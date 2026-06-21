@@ -3344,11 +3344,13 @@ init();
   const TOKEN=()=>localStorage.getItem('push_token')||'';
   // 金メダルのアイコン（SVG）
   const MEDAL='<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-4px;display:inline-block"><defs><radialGradient id="pmg" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#fff0c0"/><stop offset="55%" stop-color="#e0b24a"/><stop offset="100%" stop-color="#9c7b2e"/></radialGradient></defs><circle cx="12" cy="13" r="8.2" fill="url(#pmg)" stroke="#7a5e22" stroke-width="1.1"/><circle cx="12" cy="13" r="5.6" fill="none" stroke="rgba(122,94,34,.55)" stroke-width="1"/><path d="M12 9l1.25 2.4 2.65.3-1.95 1.85.5 2.6L12 15.3l-2.45 1.3.5-2.6-1.95-1.85 2.65-.3z" fill="#fff7df"/></svg>';
-  let PACKS={};
+  let PACKS={}; let BAL=null, EARNED=0;
   function fmt(n){return (n||0).toLocaleString();}
   function countUp(el,to,dur){ if(!el)return; const from=parseInt((el.textContent||'0').replace(/[^0-9]/g,''))||0; to=to||0; if(from===to){el.textContent=fmt(to);return;} const t0=performance.now(); (function f(t){const k=Math.min(1,(t-t0)/(dur||1000)); el.textContent=fmt(Math.round(from+(to-from)*k)); if(k<1)requestAnimationFrame(f);})(performance.now()); }
-  async function fetchCoins(){ try{const r=await fetch('/api/coins',{headers:{Authorization:'Bearer '+TOKEN()}}); if(!r.ok)return null; const d=await r.json(); PACKS=d.packs||PACKS; return d.coins||0;}catch(e){return null;} }
-  window.loadCoins=async function(){ if(!TOKEN())return; const c=await fetchCoins(); if(c==null)return; document.querySelectorAll('.coin-balance-val').forEach(e=>e.textContent=fmt(c)); const cb=document.getElementById('charge-balance'); if(cb)cb.textContent=fmt(c); };
+  async function fetchCoins(){ try{const r=await fetch('/api/coins',{headers:{Authorization:'Bearer '+TOKEN()}}); if(!r.ok)return null; const d=await r.json(); PACKS=d.packs||PACKS; BAL=d.coins||0; EARNED=d.earned||0; return BAL;}catch(e){return null;} }
+  function paint(){ const v=fmt(BAL||0); document.querySelectorAll('.coin-balance-val').forEach(e=>e.textContent=v); const cb=document.getElementById('charge-balance'); if(cb)cb.textContent=v; document.querySelectorAll('.coin-earned-val').forEach(e=>e.textContent=fmt(EARNED||0)); }
+  function toastMsg(t){ const el=document.createElement('div'); el.textContent=t; el.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#9c3f24,#6f2a18);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:10px 16px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);"; document.body.appendChild(el); setTimeout(()=>el.remove(),2600); }
+  window.loadCoins=async function(){ if(!TOKEN())return; const c=await fetchCoins(); if(c==null)return; paint(); };
   window.openCharge=async function(){
     if(!TOKEN()){ alert('ログインしてください'); return; }
     await loadCoins();
@@ -3422,9 +3424,18 @@ init();
       if(mp && !document.getElementById('mp-charge-card')){
         const card=document.createElement('div'); card.id='mp-charge-card';
         card.style.cssText="margin:14px;padding:18px;border-radius:14px;background:linear-gradient(180deg,#1f1812,#15100b);box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),0 8px 22px rgba(0,0,0,.45);font-family:'DotGothic16',sans-serif;display:flex;align-items:center;justify-content:space-between;gap:12px;";
-        card.innerHTML='<div><div style="font-size:11px;color:rgba(231,220,193,.55);">所持メダル</div><div style="font-family:\'Press Start 2P\',monospace;font-size:20px;color:#e8ce86;margin-top:5px;">'+MEDAL+' <span class="coin-balance-val">0</span></div></div><button onclick="openCharge()" style="background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;font-family:\'DotGothic16\',sans-serif;font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;cursor:pointer;white-space:nowrap;">チャージ</button>';
+        card.innerHTML='<div><div style="font-size:11px;color:rgba(231,220,193,.55);">所持メダル</div><div style="font-family:\'Press Start 2P\',monospace;font-size:20px;color:#e8ce86;margin-top:5px;">'+MEDAL+' <span class="coin-balance-val">0</span></div><div style="font-size:11px;color:rgba(231,220,193,.5);margin-top:8px;">獲得メダル <span class="coin-earned-val" style="color:#cbb086;font-weight:700;">0</span></div></div><button onclick="openCharge()" style="background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;font-family:\'DotGothic16\',sans-serif;font-weight:700;font-size:14px;padding:11px 20px;border-radius:12px;cursor:pointer;white-space:nowrap;">チャージ</button>';
         mp.insertBefore(card, mp.firstChild);
       }
+      // ── メダル消費（PUSH/ギフト/試練）──
+      try{ if(typeof socket!=='undefined' && socket && socket.on){
+        socket.on('coin_short', d=>{ toastMsg('メダルが足りません'+((d&&d.need)?'（必要 '+d.need+'）':'')); loadCoins(); setTimeout(()=>{try{openCharge();}catch(e){}},300); });
+        socket.on('coin_balance', d=>{ if(d&&typeof d.coins==='number'){ BAL=d.coins; paint(); } });
+      } }catch(e){}
+      const _op=window.onPush;
+      if(typeof _op==='function'){ window.onPush=function(){ const amt=(typeof G!=='undefined'&&G.selectedAmt)||0; if(BAL!=null && amt>BAL){ toastMsg('メダルが足りません'); try{openCharge();}catch(e){} return; } return _op.apply(this,arguments); }; }
+      function wrapBomb(n){ const f=window[n]; if(typeof f!=='function')return; window[n]=function(){ const sel=document.getElementById('mb-boost'); const b=parseInt(sel&&sel.value)||5; const cost=b*10; if(BAL!=null && cost>BAL){ toastMsg('メダルが足りません（試練 '+cost+'）'); try{openCharge();}catch(e){} return; } return f.apply(this,arguments); }; }
+      wrapBomb('sendMobileBomb'); wrapBomb('sendBomb');
       if(TOKEN()) loadCoins();
     },700);
   });

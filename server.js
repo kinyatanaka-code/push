@@ -131,6 +131,7 @@ async function initDB() {
       );
       ALTER TABLE archives ADD COLUMN IF NOT EXISTS is_timelapse BOOLEAN DEFAULT FALSE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS earned INTEGER DEFAULT 0;
       CREATE TABLE IF NOT EXISTS coin_tx (
         ref TEXT PRIMARY KEY,
         user_id UUID,
@@ -227,6 +228,36 @@ async function saveSettings(obj) {
   } catch(e) { console.error('saveSettings:', e.message); }
 }
 
+// ── メダル消費（残高チェック＋減算を原子的に。不足ならfalse）──
+async function spendCoins(userId, email, amount) {
+  amount = parseInt(amount)||0;
+  if (amount <= 0) return true;
+  try {
+    if (db) {
+      const r = await db.query('UPDATE users SET coins = coins - $1 WHERE id=$2 AND coins >= $1 RETURNING coins', [amount, userId]);
+      return r.rowCount > 0;
+    }
+    const u = userMap.get(email);
+    if (!u || (u.coins||0) < amount) return false;
+    u.coins -= amount; saveJSON(USERS_FILE, Object.fromEntries(userMap)); return true;
+  } catch(e) { console.error('spendCoins:', e.message); return false; }
+}
+// ── 配信者の獲得メダル（精算用カウンタ）──
+async function addEarned(userId, email, amount) {
+  amount = parseInt(amount)||0;
+  if (amount <= 0 || !userId) return;
+  try {
+    if (db) { await db.query('UPDATE users SET earned = COALESCE(earned,0) + $1 WHERE id=$2', [amount, userId]); }
+    else { const u = [...userMap.values()].find(x=>x.id===userId); if (u) { u.earned=(u.earned||0)+amount; saveJSON(USERS_FILE, Object.fromEntries(userMap)); } }
+  } catch(e) { console.error('addEarned:', e.message); }
+}
+async function getEarned(userId, email) {
+  try {
+    if (db) { const r = await db.query('SELECT earned FROM users WHERE id=$1', [userId]); return r.rows[0]?.earned || 0; }
+    const u = userMap.get(email); return u?.earned || 0;
+  } catch(e) { return 0; }
+}
+
 // ══════════════════════════════════════════════
 // ライブ状態管理（メモリ）
 // ══════════════════════════════════════════════
@@ -275,7 +306,7 @@ function ensureAuth(socketId, data) {
   if (!tok) return null;
   const s = sessions.get(tok);
   if (!s) return null;
-  Object.assign(c, { userId: s.userId, name: s.name, token: tok });
+  Object.assign(c, { userId: s.userId, name: s.name, email: s.email, token: tok });
   return c;
 }
 
@@ -446,7 +477,7 @@ app.get('/api/coins', async (req, res) => {
     const tok = (req.headers.authorization||'').replace('Bearer ','');
     const s = sessions.get(tok);
     if (!s) return res.status(401).json({ error:'未ログイン' });
-    res.json({ coins: await getCoins(s.userId, s.email), packs: COIN_PACKS });
+    res.json({ coins: await getCoins(s.userId, s.email), earned: await getEarned(s.userId, s.email), packs: COIN_PACKS });
   } catch(e) { res.status(500).json({ error:'サーバーエラー' }); }
 });
 
@@ -836,7 +867,7 @@ io.on('connection', socket => {
       if (!s) { socket.emit('auth_error',{error:'認証エラー'}); return; }
       const c = clients.get(socket.id);
       if (!c) return;
-      Object.assign(c, { userId:s.userId, name:s.name, token:data.token });
+      Object.assign(c, { userId:s.userId, name:s.name, email:s.email, token:data.token });
       socket.emit('auth_ok', { name:s.name });
     } catch(e) { console.error('auth:',e); }
   });
@@ -976,19 +1007,28 @@ io.on('connection', socket => {
   });
 
   // ★ PUSHギフト — バッチ処理
-  socket.on('push_gift', data => {
+  socket.on('push_gift', async data => {
     try {
       const s = liveStreams.get(data.streamId);
       if (!s) return;
-      s.giftTotal += (data.amount||0);
+      const c = ensureAuth(socket.id, data);
+      const amount = Math.max(0, parseInt(data.amount)||0);
+      if (amount > 0) {
+        if (!c || !c.userId) { socket.emit('coin_short', { need:amount, reason:'auth' }); return; }
+        const ok = await spendCoins(c.userId, c.email, amount);
+        if (!ok) { socket.emit('coin_short', { need:amount }); return; }
+        await addEarned(s.streamerId, null, amount);            // 配信者の獲得（精算用）
+        socket.emit('coin_balance', { coins: await getCoins(c.userId, c.email) });
+      }
+      s.giftTotal += amount;
       // ★ バッファに積む（即DBには書かない）
       pushBuffer.set(data.streamId, (pushBuffer.get(data.streamId)||0) + 1);
       // 演出はリアルタイムでブロードキャスト
       io.to(`s:${data.streamId}`).emit('gift_received',{
-        amount:data.amount, senderName:data.senderName||'視聴者', giftTotal:s.giftTotal,
+        amount, senderName:data.senderName||'視聴者', giftTotal:s.giftTotal,
       });
       io.emit('streams_updated', { streams:publicStreams() });
-    } catch(e) {}
+    } catch(e) { console.error('push_gift:', e.message); }
   });
 
   // ★ PUSH連打バッチ（クライアントからのまとめ送信）
@@ -1003,14 +1043,23 @@ io.on('connection', socket => {
   });
 
   // ── ボムタスク ──
-  socket.on('send_bomb', data => {
+  socket.on('send_bomb', async data => {
     try {
-      const c = ensureAuth(socket.id, data) || clients.get(socket.id);
+      const c = ensureAuth(socket.id, data);
       const s = liveStreams.get(data.streamId);
       if (!s) return;
+      const boost = parseInt(data.boost)||5;
+      const cost = boost * 10;   // 試練コスト＝ブースト% × 10メダル
+      if (cost > 0) {
+        if (!c || !c.userId) { socket.emit('coin_short', { need:cost, reason:'auth' }); return; }
+        const ok = await spendCoins(c.userId, c.email, cost);
+        if (!ok) { socket.emit('coin_short', { need:cost }); return; }
+        await addEarned(s.streamerId, null, cost);
+        socket.emit('coin_balance', { coins: await getCoins(c.userId, c.email) });
+      }
       const taskId = mkUUID();
       const task = {
-        taskId, trial:data.trial, boost:data.boost||5,
+        taskId, trial:data.trial, boost,
         sender:c?.name||'視聴者', status:'pending',
         voteYes:0, voteNo:0, createdAt:new Date(),
       };
