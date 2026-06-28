@@ -3690,6 +3690,8 @@ init();
 #scene-bg svg{width:100%;height:100%;display:block;}
 .main{background:transparent !important;}
 .page{background:transparent !important;}
+body.scene-on::before{display:none !important;}
+body.scene-on{background:transparent !important;}
 /* ホームのRPGコマンド窓 */
 #home-cmd{display:flex;justify-content:center;padding:18px 14px 8px;}
 .rpg-cmd{width:100%;max-width:300px;background:#0e1430;border:3px solid #fff;border-radius:4px;box-shadow:inset 0 0 0 3px #2a3a7a,0 5px 0 rgba(0,0,0,.5);padding:14px 16px;font-family:'DotGothic16',sans-serif;}
@@ -3747,7 +3749,7 @@ body.role-viewer .cmd-streamer-only{display:none !important;}
     +'<g fill="#4e9444"><circle cx="150" cy="200" r="70"/><circle cx="230" cy="240" r="46"/></g>'
     +'</svg>';
   var bg=document.getElementById('scene-bg');
-  function setScene(p){ if(p==='home'||p==='mypage'||p==='quest'){ bg.style.display='block'; bg.innerHTML=SC[p]; } else { bg.style.display='none'; bg.innerHTML=''; } }
+  function setScene(p){ var on=(p==='home'||p==='mypage'||p==='quest'); document.body.classList.toggle('scene-on', on); if(on){ bg.style.display='block'; bg.innerHTML=SC[p]; } else { bg.style.display='none'; bg.innerHTML=''; } }
 
   function hookShowPage(){ var _sp=window.showPage; if(typeof _sp==='function'){ window.showPage=function(p){ var r=_sp.apply(this,arguments); try{ if(typeof p==='string') setScene(p); }catch(e){} return r; }; } }
 
