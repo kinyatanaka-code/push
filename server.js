@@ -132,6 +132,7 @@ async function initDB() {
       ALTER TABLE archives ADD COLUMN IF NOT EXISTS is_timelapse BOOLEAN DEFAULT FALSE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS coins INTEGER DEFAULT 0;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS earned INTEGER DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_streamer BOOLEAN DEFAULT FALSE;
       CREATE TABLE IF NOT EXISTS coin_tx (
         ref TEXT PRIMARY KEY,
         user_id UUID,
@@ -461,7 +462,7 @@ app.get('/api/me', async (req, res) => {
     if (!s) return res.status(401).json({ error: '未ログイン' });
     const u = await findUserByEmail(s.email);
     if (!u) return res.status(401).json({ error: 'ユーザーが見つかりません' });
-    res.json({ user: { id: u.id, name: u.name, email: u.email }, isAdmin: !!ADMIN_EMAIL && (u.email||'').toLowerCase() === ADMIN_EMAIL });
+    res.json({ user: { id: u.id, name: u.name, email: u.email }, isAdmin: !!ADMIN_EMAIL && (u.email||'').toLowerCase() === ADMIN_EMAIL, isStreamer: !!(u.is_streamer || u.isStreamer) });
   } catch(e) { res.status(500).json({ error: 'サーバーエラー' }); }
 });
 
@@ -479,6 +480,18 @@ app.get('/api/coins', async (req, res) => {
     if (!s) return res.status(401).json({ error:'未ログイン' });
     res.json({ coins: await getCoins(s.userId, s.email), earned: await getEarned(s.userId, s.email), packs: COIN_PACKS });
   } catch(e) { res.status(500).json({ error:'サーバーエラー' }); }
+});
+
+// ── 配信者登録（視聴者→配信者）──
+app.post('/api/become-streamer', async (req, res) => {
+  try {
+    const tok = (req.headers.authorization||'').replace('Bearer ','');
+    const s = sessions.get(tok);
+    if (!s) return res.status(401).json({ error:'未ログイン' });
+    if (db) { await db.query('UPDATE users SET is_streamer=TRUE WHERE id=$1', [s.userId]); }
+    else { const u = userMap.get(s.email); if (u) { u.isStreamer = true; saveJSON(USERS_FILE, Object.fromEntries(userMap)); } }
+    res.json({ ok:true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── サイト設定取得（公開：全ユーザーがこの設定で描画）──

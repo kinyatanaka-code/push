@@ -3461,12 +3461,27 @@ init();
   }
   function setText(sel,val){ if(!val)return; document.querySelectorAll(sel).forEach(e=>e.textContent=val); }
   function applyCopy(c){ c=c||{}; setText('.auth-sub',c.tagline); setText('#page-quest .dash-title',c.questTitle); setText('#page-quest .dash-card-title',c.questSubtitle); }
+  const DEFAULT_QUESTS=[
+    {icon:'🎯',name:'PUSHで応援',desc:'配信者にPUSHを送ろう',exp:10,boost:'応援',diff:'★☆☆',aud:'viewer'},
+    {icon:'💣',name:'試練を投げる',desc:'配信者に試練を投下しよう',exp:20,boost:'+5%',diff:'★★☆',aud:'viewer'},
+    {icon:'💬',name:'コメントで盛り上げる',desc:'コメントを送って盛り上げよう',exp:5,boost:'',diff:'★☆☆',aud:'viewer'},
+    {icon:'🎖',name:'メダルをチャージ',desc:'応援に備えてメダルを購入',exp:15,boost:'',diff:'★☆☆',aud:'viewer'},
+    {icon:'📡',name:'配信する',desc:'ライブ配信を始めよう',exp:30,boost:'',diff:'★★☆',aud:'streamer'},
+    {icon:'💪',name:'試練に応える',desc:'視聴者の試練を達成しよう',exp:25,boost:'+5%',diff:'★★☆',aud:'streamer'},
+    {icon:'🏆',name:'目標達成',desc:'掲げた目標を達成しよう',exp:100,boost:'確定',diff:'★★★',aud:'streamer'},
+    {icon:'🔥',name:'連続配信',desc:'毎日続けてランクアップ',exp:40,boost:'',diff:'★★☆',aud:'streamer'},
+  ];
+  function questList(){
+    const role=window.__pushRole||'viewer';
+    const base=(SETTINGS.quests&&SETTINGS.quests.length)?SETTINGS.quests:DEFAULT_QUESTS;
+    return base.filter(q=>!q.aud||q.aud==='both'||q.aud===role);
+  }
   function renderQuestsFromSettings(){
     const el=document.getElementById('quest-catalog'); if(!el)return;
-    el.innerHTML=SETTINGS.quests.map(q=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(180,130,255,.1);border-radius:10px;"><div style="font-size:22px;flex-shrink:0;">'+esc(q.icon)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#E8E0FF;">'+esc(q.name)+'</div><div style="font-size:10px;color:rgba(180,150,255,.5);margin-top:1px;">'+esc(q.desc)+'</div><div style="font-size:10px;color:rgba(200,180,255,.4);margin-top:2px;">'+esc(q.diff||'')+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-family:\'Space Mono\',monospace;font-size:14px;font-weight:700;color:#E040FB;text-shadow:0 0 10px rgba(224,64,251,.4);">+'+(parseInt(q.exp)||0)+' XP</div><div style="font-size:10px;color:#FFD700;margin-top:2px;">'+esc(q.boost||'')+'</div></div></div>').join('');
+    el.innerHTML=questList().map(q=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(180,130,255,.1);border-radius:10px;"><div style="font-size:22px;flex-shrink:0;">'+esc(q.icon)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#E8E0FF;">'+esc(q.name)+'</div><div style="font-size:10px;color:rgba(180,150,255,.5);margin-top:1px;">'+esc(q.desc)+'</div><div style="font-size:10px;color:rgba(200,180,255,.4);margin-top:2px;">'+esc(q.diff||'')+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-family:\'Space Mono\',monospace;font-size:14px;font-weight:700;color:#E040FB;text-shadow:0 0 10px rgba(224,64,251,.4);">+'+(parseInt(q.exp)||0)+' XP</div><div style="font-size:10px;color:#FFD700;margin-top:2px;">'+esc(q.boost||'')+'</div></div></div>').join('');
   }
-  function hookQuests(){ if(_origRQ)return; _origRQ=window.renderQuestCatalog; window.renderQuestCatalog=function(){ if(SETTINGS.quests&&SETTINGS.quests.length) renderQuestsFromSettings(); else if(typeof _origRQ==='function') _origRQ(); }; }
-  function applyAll(){ applyTheme(SETTINGS.theme); applyCopy(SETTINGS.copy); hookQuests(); if(SETTINGS.quests.length){ try{window.renderQuestCatalog();}catch(e){} } }
+  function hookQuests(){ if(_origRQ)return; _origRQ=window.renderQuestCatalog; window.renderQuestCatalog=function(){ renderQuestsFromSettings(); }; }
+  function applyAll(){ applyTheme(SETTINGS.theme); applyCopy(SETTINGS.copy); hookQuests(); try{window.renderQuestCatalog();}catch(e){} }
 
   async function loadSettings(){ try{const r=await fetch('/api/settings');const d=await r.json();const x=d.settings||{};SETTINGS={theme:x.theme||{},copy:x.copy||{},quests:Array.isArray(x.quests)?x.quests:[]};}catch(e){} applyAll(); }
 
@@ -3482,6 +3497,7 @@ init();
     +'<input class="aq-exp" type="number" value="'+(parseInt(q.exp)||0)+'" placeholder="XP" style="width:70px;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;">'
     +'<input class="aq-boost" value="'+esc(q.boost||'')+'" placeholder="報酬(例:+10%)" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;font-family:\'DotGothic16\',sans-serif;">'
     +'<input class="aq-diff" value="'+esc(q.diff||'★☆☆')+'" placeholder="難易度" style="width:74px;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;">'
+    +'<select class="aq-aud" style="width:96px;padding:7px;border-radius:8px;border:1px solid rgba(214,184,112,.4);background:#efe6cd;color:#33230f;font-size:12px;font-family:\'DotGothic16\',sans-serif;"><option value="both"'+(!q.aud||q.aud==='both'?' selected':'')+'>両方</option><option value="viewer"'+(q.aud==='viewer'?' selected':'')+'>視聴者</option><option value="streamer"'+(q.aud==='streamer'?' selected':'')+'>配信者</option></select>'
     +'</div></div>'; }
 
   function build(){
@@ -3538,6 +3554,7 @@ init();
       exp:parseInt(r.querySelector('.aq-exp').value)||0,
       boost:r.querySelector('.aq-boost').value.trim(),
       diff:r.querySelector('.aq-diff').value.trim(),
+      aud:((r.querySelector('.aq-aud')||{}).value)||'both',
     })).filter(q=>q.name);
     const theme={ gold:w.querySelector('#adm-gold').value, ember:w.querySelector('#adm-ember').value, parch:w.querySelector('#adm-parch').value, bg:w.querySelector('#adm-bg').value };
     const copy={ tagline:w.querySelector('#adm-tagline').value.trim(), questTitle:w.querySelector('#adm-qtitle').value.trim(), questSubtitle:w.querySelector('#adm-qsub').value.trim() };
@@ -3607,6 +3624,61 @@ init();
     setMnav(cur);
   }
   window.addEventListener('DOMContentLoaded',function(){ setTimeout(init,500); });
+})();
+</script>
+
+<!-- ★ ロール（視聴者/配信者）でUIを切り替え -->
+<script>
+(function(){
+  var TOKEN=function(){return localStorage.getItem('push_token')||'';};
+  var css='body.role-viewer #sb-stream,'
+   +'body.role-viewer #mobile-nav button[onclick*="stream"],'
+   +'body.role-viewer #mobile-menu button[onclick*="stream"]{display:none !important;}'
+   +'body.role-viewer #mp-level-badge{display:none !important;}'
+   +'body.role-viewer .dash-card:has(#rpg-status-card){display:none !important;}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+  function applyRole(role){
+    window.__pushRole = role;
+    document.body.classList.toggle('role-viewer', role!=='streamer');
+    document.body.classList.toggle('role-streamer', role==='streamer');
+    var mp=document.getElementById('page-mypage');
+    var card=document.getElementById('become-streamer-card');
+    if(role!=='streamer'){
+      if(mp && !card){
+        card=document.createElement('div'); card.id='become-streamer-card';
+        card.style.cssText="margin:14px;padding:16px 18px;border-radius:14px;background:linear-gradient(180deg,#1f1812,#15100b);box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),0 8px 22px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'DotGothic16',sans-serif;";
+        card.innerHTML='<div><div style="font-size:13px;font-weight:700;color:#e8ce86;">挑戦者になる</div><div style="font-size:11px;color:rgba(231,220,193,.55);margin-top:3px;">配信して目標に挑戦できます</div></div><button onclick="becomeStreamer(this)" style="background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;font-family:\'DotGothic16\',sans-serif;font-weight:700;font-size:14px;padding:11px 18px;border-radius:12px;cursor:pointer;white-space:nowrap;">配信者登録</button>';
+        var anchor=document.getElementById('mp-charge-card');
+        if(anchor && anchor.nextSibling) mp.insertBefore(card, anchor.nextSibling);
+        else if(mp.firstChild) mp.insertBefore(card, mp.firstChild);
+        else mp.appendChild(card);
+      }
+    } else if(card){ card.remove(); }
+    try{ if(typeof window.renderQuestCatalog==='function') window.renderQuestCatalog(); }catch(e){}
+  }
+  window.becomeStreamer=async function(b){
+    if(!TOKEN()){ alert('ログインしてください'); return; }
+    if(!confirm('配信者として登録しますか？\n配信機能と挑戦者ランクが使えるようになります。')) return;
+    if(b){ b.disabled=true; b.textContent='登録中...'; }
+    try{
+      var r=await fetch('/api/become-streamer',{method:'POST',headers:{Authorization:'Bearer '+TOKEN()}});
+      var d=await r.json();
+      if(r.ok && d.ok){
+        applyRole('streamer');
+        var t=document.createElement('div'); t.textContent='⚔ 配信者になりました！';
+        t.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);";
+        document.body.appendChild(t); setTimeout(function(){t.remove();},3500);
+      } else { alert(d.error||'登録に失敗しました'); if(b){b.disabled=false;b.textContent='配信者登録';} }
+    }catch(e){ alert('通信エラー: '+e.message); if(b){b.disabled=false;b.textContent='配信者登録';} }
+  };
+  async function loadRole(){
+    if(!TOKEN()){ applyRole('viewer'); return; }
+    try{ var r=await fetch('/api/me',{headers:{Authorization:'Bearer '+TOKEN()}}); var d=await r.json(); applyRole(d.isStreamer?'streamer':'viewer'); }
+    catch(e){ applyRole('viewer'); }
+  }
+  window.__reloadRole=loadRole;
+  window.addEventListener('DOMContentLoaded',function(){ setTimeout(loadRole,650); });
 })();
 </script>
 
