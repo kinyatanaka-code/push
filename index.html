@@ -3635,7 +3635,8 @@ init();
    +'body.role-viewer #mobile-nav button[onclick*="stream"],'
    +'body.role-viewer #mobile-menu button[onclick*="stream"]{display:none !important;}'
    +'body.role-viewer #mp-level-badge{display:none !important;}'
-   +'body.role-viewer .dash-card:has(#rpg-status-card){display:none !important;}';
+   +'body.role-viewer .dash-card:has(#rpg-status-card){display:none !important;}'
+   +'body.role-viewer #mp-tab-archive,body.role-viewer #mp-tab-timelapse,body.role-viewer #mp-tab-insight,body.role-viewer #mp-archive,body.role-viewer #mp-timelapse,body.role-viewer #mp-insight{display:none !important;}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
   function applyRole(role){
@@ -3645,6 +3646,7 @@ init();
     var mp=document.getElementById('page-mypage');
     var card=document.getElementById('become-streamer-card');
     if(role!=='streamer'){
+      try{ if(typeof window.switchMpTab==='function') window.switchMpTab('account'); }catch(e){}
       if(mp && !card){
         card=document.createElement('div'); card.id='become-streamer-card';
         card.style.cssText="margin:14px;padding:16px 18px;border-radius:14px;background:linear-gradient(180deg,#1f1812,#15100b);box-shadow:inset 0 0 0 1px rgba(214,184,112,.4),0 8px 22px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'DotGothic16',sans-serif;";
