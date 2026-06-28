@@ -1,5 +1,5 @@
 /* ============================================================
-   PUSH ギルドテーマ  guild-theme.css  (v12)
+   PUSH ギルドテーマ  guild-theme.css  (v13)
    ------------------------------------------------------------
    v11: 高級路線（プレミアム・レトロ）。ドット書体は維持しつつ
         配色/素材を黒革・本金・象牙へ。茶色のベタ塗りと
@@ -832,3 +832,23 @@ body::after{
    配信は下部ナビ/サイドバーから、ログアウトはマイページから可能。
    ============================================================ */
 .gnav-live,.gnav-out{ display:none !important; }
+
+/* ============================================================
+   v13 — マイページの可読性改善
+   ランク段（ルーキー等）・疲労度・小ラベルの薄い紫/極小文字を、
+   読みやすい明るさ・サイズに。差し替えたら <link> を ?v=13 に。
+   ============================================================ */
+/* インラインの薄紫テキスト（連続日数/XP/疲労度/ランクバッジ/累計など）を一括で明るく */
+#page-mypage [style*="180,150,255"]{ color:#dac98f !important; }
+/* プロデューサーランク段 */
+.prod-rank-item{ background:rgba(255,255,255,.05) !important; border:1px solid rgba(214,184,112,.28) !important; }
+.prod-rank-name{ color:#ead9b0 !important; font-size:9px !important; }
+.prod-rank-cond{ color:#c2ad77 !important; font-size:9px !important; margin-top:2px !important; }
+.prod-rank-item.achieved{ background:rgba(214,184,112,.14) !important; border-color:rgba(214,184,112,.5) !important; }
+.prod-rank-item.achieved .prod-rank-name{ color:#f0dca0 !important; }
+.prod-rank-progress-label{ color:#cdb98a !important; font-size:11px !important; }
+/* 見出し・小ラベル */
+.dash-card-title{ color:#d6b870 !important; }
+.ibox-lbl{ color:#cdb98a !important; }
+/* 疲労度ラベルを少し大きく */
+.fatigue-bar-label{ font-size:12px !important; }
