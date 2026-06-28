@@ -3592,5 +3592,23 @@ init();
 })();
 </script>
 
+<!-- ★ スマホ下部ナビ：選択中タブを明示 -->
+<script>
+(function(){
+  var css='#mobile-nav button{color:#cbb886 !important;background:transparent !important;box-shadow:none !important;transition:color .15s,background .15s,box-shadow .15s;}'
+   +'#mobile-nav button.mnav-on{color:#fff3da !important;background:linear-gradient(180deg,rgba(201,106,58,.32),rgba(156,63,36,.16)) !important;box-shadow:inset 0 3px 0 #e8ce86 !important;border-radius:10px !important;}';
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+  function setMnav(p){ document.querySelectorAll('#mobile-nav button').forEach(function(b){ var m=(b.getAttribute('onclick')||'').match(/showPage\('(\w+)'\)/); b.classList.toggle('mnav-on', !!m && m[1]===p); }); }
+  function init(){
+    var _sp=window.showPage;
+    if(typeof _sp==='function'){ window.showPage=function(p){ var r=_sp.apply(this,arguments); try{ if(typeof p==='string') setMnav(p); }catch(e){} return r; }; }
+    var cur='home', on=document.querySelector('.sb-item.on');
+    if(on){ var m=(on.getAttribute('onclick')||'').match(/showPage\('(\w+)'\)/); if(m) cur=m[1]; }
+    setMnav(cur);
+  }
+  window.addEventListener('DOMContentLoaded',function(){ setTimeout(init,500); });
+})();
+</script>
+
 </body>
 </html>
