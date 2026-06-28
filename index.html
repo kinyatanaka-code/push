@@ -3478,7 +3478,7 @@ init();
   }
   function renderQuestsFromSettings(){
     const el=document.getElementById('quest-catalog'); if(!el)return;
-    el.innerHTML=questList().map(q=>'<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(180,130,255,.1);border-radius:10px;"><div style="font-size:22px;flex-shrink:0;">'+esc(q.icon)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#E8E0FF;">'+esc(q.name)+'</div><div style="font-size:10px;color:rgba(180,150,255,.5);margin-top:1px;">'+esc(q.desc)+'</div><div style="font-size:10px;color:rgba(200,180,255,.4);margin-top:2px;">'+esc(q.diff||'')+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-family:\'Space Mono\',monospace;font-size:14px;font-weight:700;color:#E040FB;text-shadow:0 0 10px rgba(224,64,251,.4);">+'+(parseInt(q.exp)||0)+' XP</div><div style="font-size:10px;color:#FFD700;margin-top:2px;">'+esc(q.boost||'')+'</div></div></div>').join('');
+    window.__questList=questList();el.innerHTML=window.__questList.map(function(q,i){return '<div data-qi="'+i+'" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(180,130,255,.1);border-radius:10px;"><div style="font-size:22px;flex-shrink:0;">'+esc(q.icon)+'</div><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#E8E0FF;">'+esc(q.name)+'</div><div style="font-size:10px;color:rgba(180,150,255,.5);margin-top:1px;">'+esc(q.desc)+'</div><div style="font-size:10px;color:rgba(200,180,255,.4);margin-top:2px;">'+esc(q.diff||'')+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-family:\'Space Mono\',monospace;font-size:14px;font-weight:700;color:#E040FB;text-shadow:0 0 10px rgba(224,64,251,.4);">+'+(parseInt(q.exp)||0)+' XP</div><div style="font-size:10px;color:#FFD700;margin-top:2px;">'+esc(q.boost||'')+'</div></div></div>';}).join('');
   }
   function hookQuests(){ if(_origRQ)return; _origRQ=window.renderQuestCatalog; window.renderQuestCatalog=function(){ renderQuestsFromSettings(); }; }
   function applyAll(){ applyTheme(SETTINGS.theme); applyCopy(SETTINGS.copy); hookQuests(); try{window.renderQuestCatalog();}catch(e){} }
@@ -3681,6 +3681,119 @@ init();
   }
   window.__reloadRole=loadRole;
   window.addEventListener('DOMContentLoaded',function(){ setTimeout(loadRole,650); });
+})();
+</script>
+
+<!-- ★ RPGシーン背景 + ホームコマンド窓 + クエスト巻物演出 -->
+<style>
+#scene-bg{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;}
+#scene-bg svg{width:100%;height:100%;display:block;}
+.main{background:transparent !important;}
+.page{background:transparent !important;}
+/* ホームのRPGコマンド窓 */
+#home-cmd{display:flex;justify-content:center;padding:18px 14px 8px;}
+.rpg-cmd{width:100%;max-width:300px;background:#0e1430;border:3px solid #fff;border-radius:4px;box-shadow:inset 0 0 0 3px #2a3a7a,0 5px 0 rgba(0,0,0,.5);padding:14px 16px;font-family:'DotGothic16',sans-serif;}
+.rpg-cmd-ttl{font-family:'Press Start 2P',monospace;font-size:8px;color:#9fb6ff;margin-bottom:10px;}
+.rpg-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:#fff;font-family:'DotGothic16',sans-serif;font-size:15px;padding:6px 2px;cursor:pointer;text-align:left;}
+.rpg-opt .cur{opacity:0;color:#ffd86a;}
+.rpg-opt:hover{color:#ffe08a;}
+.rpg-opt:hover .cur{opacity:1;}
+body.role-viewer .cmd-streamer-only{display:none !important;}
+/* クエスト巻物モーダル */
+.scroll-ov{position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;}
+.scroll-paper{position:relative;width:88%;max-width:340px;}
+.scroll-roller{height:16px;border-radius:8px;background:linear-gradient(180deg,#d8b86a,#8a6526);box-shadow:0 2px 5px rgba(0,0,0,.5);position:relative;z-index:2;}
+.scroll-inner{background:linear-gradient(160deg,#f3e7c8,#e6d3a6);overflow:hidden;padding:0 18px;transform-origin:center top;animation:unroll .5s ease-out forwards;box-shadow:inset 0 0 0 1px rgba(168,127,55,.4);}
+@keyframes unroll{0%{max-height:0;padding-top:0;padding-bottom:0;opacity:.5;}100%{max-height:360px;padding-top:18px;padding-bottom:18px;opacity:1;}}
+.sc-ico{font-size:30px;text-align:center;}
+.sc-name{font-size:15px;font-weight:700;color:#3a2c18;text-align:center;margin-top:6px;}
+.sc-desc{font-size:12px;color:#7a6238;text-align:center;margin-top:8px;line-height:1.6;}
+.sc-meta{font-family:'Press Start 2P',monospace;font-size:9px;color:#a8511f;text-align:center;margin-top:12px;}
+.sc-send{display:block;width:100%;margin-top:14px;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);border-radius:20px;color:#fff8ef;font-family:'DotGothic16',sans-serif;font-weight:700;font-size:14px;padding:11px;cursor:pointer;}
+.scroll-paper.sending{animation:rollaway .72s ease-in forwards;}
+@keyframes rollaway{0%{transform:translate(0,0) scale(1) rotate(0);opacity:1;}35%{transform:translateY(-4px) scaleY(.45);}100%{transform:translate(120%,-45%) scale(.25) rotate(20deg);opacity:0;}}
+</style>
+<div id="scene-bg" aria-hidden="true"></div>
+<script>
+(function(){
+  var SC={};
+  SC.home='<svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">'
+    +'<defs><linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd6f2"/><stop offset="1" stop-color="#d2f0fb"/></linearGradient></defs>'
+    +'<rect width="1000" height="640" fill="url(#sky2)"/>'
+    +'<circle cx="840" cy="120" r="46" fill="#ffe07a"/><circle cx="840" cy="120" r="58" fill="#ffe07a" opacity=".3"/>'
+    +'<g fill="#fff"><rect x="120" y="120" width="120" height="26" rx="13"/><rect x="150" y="100" width="64" height="26" rx="13"/><rect x="520" y="180" width="100" height="22" rx="11"/></g>'
+    +'<path d="M0 360 Q220 290 460 360 T1000 360 V640 H0 Z" fill="#7cc24a"/>'
+    +'<path d="M0 430 Q260 360 540 430 T1080 430 V640 H0 Z" fill="#5fa838"/>'
+    +'<rect x="0" y="520" width="1000" height="120" fill="#4e9230"/>'
+    +'<g fill="#3f7d27"><rect x="60" y="530" width="6" height="18"/><rect x="74" y="522" width="6" height="26"/><rect x="88" y="530" width="6" height="18"/><rect x="900" y="540" width="6" height="18"/><rect x="914" y="532" width="6" height="26"/></g>'
+    +'</svg>';
+  SC.mypage='<svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">'
+    +'<defs><linearGradient id="tav2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2415"/><stop offset="1" stop-color="#1c1008"/></linearGradient>'
+    +'<radialGradient id="lamp2" cx="50%" cy="22%" r="60%"><stop offset="0" stop-color="rgba(255,180,80,.45)"/><stop offset="1" stop-color="rgba(255,180,80,0)"/></radialGradient></defs>'
+    +'<rect width="1000" height="640" fill="url(#tav2)"/>'
+    +'<g stroke="rgba(0,0,0,.22)" stroke-width="3"><line x1="0" y1="90" x2="1000" y2="90"/><line x1="0" y1="180" x2="1000" y2="180"/><line x1="0" y1="270" x2="1000" y2="270"/></g>'
+    +'<rect width="1000" height="640" fill="url(#lamp2)"/>'
+    +'<rect x="640" y="70" width="150" height="120" fill="#15244a" stroke="#5a3a1e" stroke-width="6"/><line x1="715" y1="70" x2="715" y2="190" stroke="#5a3a1e" stroke-width="4"/><line x1="640" y1="130" x2="790" y2="130" stroke="#5a3a1e" stroke-width="4"/><circle cx="765" cy="100" r="9" fill="#ffe9a8"/>'
+    +'<rect x="120" y="78" width="150" height="56" rx="6" fill="#6b4423" stroke="#caa24a" stroke-width="3"/><text x="195" y="116" text-anchor="middle" font-family="sans-serif" font-size="26" fill="#f0dca0">酒場</text>'
+    +'<rect x="0" y="470" width="1000" height="170" fill="#4a2f18"/><rect x="0" y="470" width="1000" height="16" fill="#6b4423"/>'
+    +'<g><rect x="80" y="380" width="90" height="100" rx="12" fill="#7a5230" stroke="#3a2410" stroke-width="4"/><line x1="80" y1="410" x2="170" y2="410" stroke="#caa24a" stroke-width="4"/><line x1="80" y1="445" x2="170" y2="445" stroke="#caa24a" stroke-width="4"/></g>'
+    +'</svg>';
+  SC.quest='<svg viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">'
+    +'<defs><linearGradient id="dusk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe6c0"/><stop offset="1" stop-color="#86b06f"/></linearGradient></defs>'
+    +'<rect width="1000" height="640" fill="url(#dusk2)"/>'
+    +'<rect x="0" y="500" width="1000" height="140" fill="#5a8f3e"/>'
+    +'<rect x="120" y="300" width="60" height="260" fill="#6b4a28"/><rect x="138" y="300" width="14" height="260" fill="#7d5a34"/>'
+    +'<g fill="#3f7d36"><circle cx="150" cy="200" r="110"/><circle cx="250" cy="250" r="80"/><circle cx="40" cy="250" r="74"/><circle cx="180" cy="120" r="74"/></g>'
+    +'<g fill="#4e9444"><circle cx="150" cy="200" r="70"/><circle cx="230" cy="240" r="46"/></g>'
+    +'</svg>';
+  var bg=document.getElementById('scene-bg');
+  function setScene(p){ if(p==='home'||p==='mypage'||p==='quest'){ bg.style.display='block'; bg.innerHTML=SC[p]; } else { bg.style.display='none'; bg.innerHTML=''; } }
+
+  function hookShowPage(){ var _sp=window.showPage; if(typeof _sp==='function'){ window.showPage=function(p){ var r=_sp.apply(this,arguments); try{ if(typeof p==='string') setScene(p); }catch(e){} return r; }; } }
+
+  function buildHomeCmd(){
+    var home=document.getElementById('page-home'); if(!home||document.getElementById('home-cmd'))return;
+    var box=document.createElement('div'); box.id='home-cmd';
+    box.innerHTML='<div class="rpg-cmd"><div class="rpg-cmd-ttl">COMMAND</div>'
+      +'<button class="rpg-opt" data-act="cheer"><span class="cur">&#9654;</span>応援する</button>'
+      +'<button class="rpg-opt cmd-streamer-only" data-act="stream"><span class="cur">&#9654;</span>配信する</button>'
+      +'<button class="rpg-opt" data-act="quest"><span class="cur">&#9654;</span>クエスト</button></div>';
+    home.insertBefore(box, home.firstChild);
+    box.addEventListener('click',function(e){ var b=e.target.closest('.rpg-opt'); if(!b)return; var a=b.getAttribute('data-act');
+      if(a==='stream'){ try{showPage('stream');}catch(e){} }
+      else if(a==='quest'){ try{showPage('quest');}catch(e){} }
+      else { var g=document.querySelector('#page-home .card-grid'); if(g){ g.scrollIntoView({behavior:'smooth'}); } }
+    });
+  }
+
+  function closeScroll(){ var ov=document.getElementById('scroll-ov'); if(ov) ov.remove(); }
+  function openScroll(q){
+    closeScroll();
+    var ov=document.createElement('div'); ov.id='scroll-ov'; ov.className='scroll-ov';
+    ov.innerHTML='<div class="scroll-paper" id="scroll-paper"><div class="scroll-roller"></div>'
+      +'<div class="scroll-inner"><div class="sc-ico">'+(q.icon||'📜')+'</div>'
+      +'<div class="sc-name">'+(q.name||'')+'</div>'
+      +'<div class="sc-desc">'+(q.desc||'')+'</div>'
+      +'<div class="sc-meta">+'+(parseInt(q.exp)||0)+' XP'+(q.boost?(' ・ '+q.boost):'')+(q.diff?(' ・ '+q.diff):'')+'</div>'
+      +'<button class="sc-send" id="sc-send">巻いて送る ✉</button></div>'
+      +'<div class="scroll-roller"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){ if(e.target===ov) closeScroll(); });
+    document.getElementById('sc-send').addEventListener('click',sendScroll);
+  }
+  function sendScroll(){
+    var paper=document.getElementById('scroll-paper'); if(paper) paper.classList.add('sending');
+    setTimeout(function(){ closeScroll();
+      var t=document.createElement('div'); t.textContent='📜 クエストを受注した！';
+      t.style.cssText="position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:9999;background:linear-gradient(180deg,#c96a3a,#9c3f24);border:1px solid rgba(247,226,170,.6);color:#fff8ef;padding:11px 18px;border-radius:12px;font-family:'DotGothic16',sans-serif;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.5);";
+      document.body.appendChild(t); setTimeout(function(){t.remove();},2600);
+    },720);
+  }
+  function hookQuestClicks(){ var cat=document.getElementById('quest-catalog'); if(!cat||cat.__sh)return; cat.__sh=true;
+    cat.addEventListener('click',function(e){ var card=e.target.closest('[data-qi]'); if(!card)return; var qi=parseInt(card.getAttribute('data-qi')); var q=(window.__questList||[])[qi]; if(q) openScroll(q); });
+  }
+
+  window.addEventListener('DOMContentLoaded',function(){ setTimeout(function(){ hookShowPage(); buildHomeCmd(); hookQuestClicks(); setScene('home'); },760); });
 })();
 </script>
 
